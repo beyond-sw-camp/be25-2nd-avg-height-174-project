@@ -1,17 +1,19 @@
 package com.example.team3Project.domain.sourcing;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-
-
-
-@Controller
+@RestController
+@RequestMapping("/sourcing")
 public class SourcingController {
+
     @GetMapping("/")
     public String mainHome() {
         return "Hello World!";
@@ -19,25 +21,40 @@ public class SourcingController {
     
     @GetMapping("/upload")
     public String uploadForm() {
-        return "uplaod";
+        return "upload";
     }
 
     @PostMapping("/upload")
-    public String handleFileUpload(@RequestParam("file") MultipartFile file, Model model) {
+    public Map<String, Object> handleFileUpload(@RequestPart("file") 
+                                    MultipartFile file,
+                                    @RequestPart("data") Map<String, Object> json
+                                    ) {
+        
+        Map<String,Object> response = new HashMap<>();
+        Map<String,Object> dataPart = (Map<String,Object>) json.get("data");
+
+        // 파일이 비어있다면 json에 따로 넣기.
         
         if (file.isEmpty()) {
-            model.addAttribute("message", "파일 선택해 주세요.");
-            return "upload";
+            response.put("status", "error");
+            response.put("message", "파일을 선택해 주세요.");
+            return response;
         }
-
-        //일단 받았으면, 실제 로직은 여기서 실행이 됨. 
-        String fileName = file.getOriginalFilename();
-        model.addAttribute("message", fileName + " 파일이 성공적으로 업로드되었습니다.");
         
-        return "upload";
+        System.out.println(dataPart);
+
+
+        if (dataPart != null) {
+            String title = (String) dataPart.get("title");
+            String original_price = String.valueOf(dataPart.get("original_price"));
+
+            System.out.println("상품명:  " + title);
+            System.out.println("가격:  " + original_price);
+        }
+        
+        return response;
+
     }
     
-    
-    
-    
+
 }
