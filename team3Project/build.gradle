@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-	// 이거 무조건 빌드후 배포시 넣기. 팔슈암
+	// 이거 무조건 빌드후 배포시 넣기 아마 로그인 에서 필수임.
 	// implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	// Vue 넣을꺼니까 Vue 넣으면 빼기
