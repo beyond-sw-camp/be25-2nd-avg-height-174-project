@@ -6,10 +6,9 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,19 +31,9 @@ public class SourcingController {
     }
 
     @PostMapping("/upload")
-    public Map<String, Object> handleFileUpload(@RequestPart("file") 
-                                    MultipartFile file,
-                                    @RequestPart("data") SourcingDTO sourcingDTO) 
+    public Map<String, Object> handleFileUpload(@RequestBody SourcingDTO sourcingDTO) 
     {
         Map<String,Object> response = new HashMap<>();
-
-        // 파일이 비어있다면 에러 메세지 띄우기.
-
-        if (file.isEmpty()) {
-            response.put("status", "error");
-            response.put("message", "파일을 선택해 주세요.");
-            return response;
-        }
         
         List<String> errors = sourcingService.validateSourcingData(sourcingDTO);
         
@@ -56,10 +45,10 @@ public class SourcingController {
         }else {
             response.put("status", "success");
             response.put("receivedData", sourcingDTO);
+            
+            sourcingService.saveSourcingData(sourcingDTO);
         }
         
-        sourcingService.saveSourcingData(sourcingDTO);
-
         return response;
 
     }

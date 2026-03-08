@@ -52,7 +52,8 @@ public class SourcingDTO {
     @Data
     public static class Option {
         private String name;
-        private List<String> values;
+        private String values;
+        private Boolean available;
     }
 
 }
