@@ -1,5 +1,6 @@
 package com.example.team3Project.domain.sourcing;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,16 +17,22 @@ public class SourcingService {
     // mariaDB에 저장하기 위한 하나의 객체.
     private final SourcingRepository sourcingRepository;
 
-    // 일단 json 파일이 제대로 원하는 값들이 있는지 확인.
+    // 일단 json 파일이 제대로 원하는 값들이 있는지 확인. 즉, 검증
     public List<String> validateSourcingData(SourcingDTO sourcingDTO) {
         List<String> errors = new ArrayList<>();
-
+        
        // json 파일 확인 해보는데 만약 뭔가가 누락이 되었다면, 그 즉시 누락 되었다고 나오기.
         if (!StringUtils.hasText(sourcingDTO.getSourceUrl())) {
             errors.add("sourceUrl가 누락 되었습니다.");
+        } else if (!sourcingDTO.getSourceUrl().startsWith("http")) {
+            errors.add("sourceUrl이 유효하지 않습니다.");
         }
+        // 상품 ID 확인
         if (!StringUtils.hasText(sourcingDTO.getProductId())) {
             errors.add("productId가 누락 되었습니다.");
+        }
+        else if (sourcingRepository.existsByProductId(sourcingDTO.getProductId())) {
+            errors.add("이미 등록된 상품입니다.");
         }
         // 옵션 및 다양한 data 누락 되었는지 확인하기.
         if (sourcingDTO.getData() == null) {
@@ -40,9 +47,13 @@ public class SourcingService {
         if (!StringUtils.hasText(productData.getTitle())) {
             errors.add("title이 누락 되었습니다.");
         }
+        
         if (productData.getOriginalPrice() == null) {
             errors.add("originalPrice가 누락 되었습니다.");
+        } else if (productData.getOriginalPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add("상품 가격은 0보다 커야 합니다.");
         }
+
         if (!StringUtils.hasText(productData.getCurrency())) {
             errors.add("currency가 누락 되었습니다.");
         }
