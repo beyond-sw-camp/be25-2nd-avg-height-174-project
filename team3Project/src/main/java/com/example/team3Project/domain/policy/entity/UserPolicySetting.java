@@ -31,5 +31,38 @@ public class UserPolicySetting {
     private BigDecimal marketFeeRate;     // 마켓 수수료율(%)
     @Column(name = "card_fee_rate", nullable = false)
     private BigDecimal cardFeeRate;       // 카드 수수료(%)
+
+
+    // 새 정책 설정 엔티티를 만들 때 사용하는 정책 생성 메서드
+    public static UserPolicySetting create(
+            Long userId,
+            BigDecimal targetMarginRate,
+            BigDecimal minMarginAmount,
+            BigDecimal marketFeeRate,
+            BigDecimal cardFeeRate
+    ) {
+        UserPolicySetting setting = new UserPolicySetting();
+        setting.userId = userId;
+        setting.targetMarginRate = targetMarginRate;
+        setting.minMarginAmount = minMarginAmount;
+        setting.marketFeeRate = marketFeeRate;
+        setting.cardFeeRate = cardFeeRate;
+        return setting;
+    }
+
+    // 기존 엔티티의 값을 수정
+    public void update(
+            BigDecimal targetMarginRate,
+            BigDecimal minMarginAmount,
+            BigDecimal marketFeeRate,
+            BigDecimal cardFeeRate
+    ) {
+        this.targetMarginRate = targetMarginRate;
+        this.minMarginAmount = minMarginAmount;
+        this.marketFeeRate = marketFeeRate;
+        this.cardFeeRate = cardFeeRate;
+    }
 }
+
+
 
