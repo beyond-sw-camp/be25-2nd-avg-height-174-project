@@ -6,7 +6,9 @@ import com.example.team3Project.domain.policy.dto.BlockedWordResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +24,7 @@ public class BlockedWordController {
     // 서비스 클래스 주입 - 비즈니스 로직은 해당 서비스 클래스에서 진행한다.
     private final BlockedWordService blockedWordService;
 
-    // Post 메서드에 대해서 작동한다.
+    // Post 요청을 처리한다. - 금지어 등록
     @PostMapping
     public ResponseEntity<BlockedWordResponse> createBlockedWord(
             @RequestParam Long userId,  // 아직 인증 기능 X -> 어떤 사용자의 금지어인지 URL 파라미터로 받는다.
@@ -35,7 +37,7 @@ public class BlockedWordController {
         return ResponseEntity.ok(response);
     }
 
-    // GET 메서드에 대해서 작동한다. - 사용자의 금지어 목록 전체 조회
+    // GET 요청을 처리한다. - 사용자의 금지어 목록 전체 조회
     @GetMapping
     public ResponseEntity<List<BlockedWordResponse>> getBlockedWords(
             @RequestParam Long userId // 아직 인증 기능 X -> 어떤 사용자의 금지어인지 URL 파라미터로 받는다.
@@ -44,6 +46,20 @@ public class BlockedWordController {
         List<BlockedWordResponse> response = blockedWordService.getBlockedWords(userId);
         // 조회된 목록을 200 OK 응답으로 돌려준다.
         return ResponseEntity.ok(response);
+    }
+
+
+    // DELETE 요청을 처리한다. - 금지어 삭제
+    @DeleteMapping("/{userBlockedWordId}")
+    public ResponseEntity<Void> deleteBlockedWord(
+            @PathVariable Long userBlockedWordId,  // URL 경로에 들어있는 금지어 ID를 받는다.
+            @RequestParam Long userId    // 웹 요청 파라미터를 메서드 파라미터에 바인딩한다. - 어느 사용자의 요청인지 쿼리 파라미터로 받음
+    ) {
+        // 서비스에서 삭제 로직을 돌린다.
+        blockedWordService.deleteBlockedWord(userId, userBlockedWordId);
+        return ResponseEntity.noContent().build();
+        // Http 상태 코드 - 204(noContent)
+        // 응답 body는 따로 보내지 않는다.
     }
 
     /*

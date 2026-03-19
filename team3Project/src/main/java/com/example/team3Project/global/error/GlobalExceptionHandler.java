@@ -1,6 +1,8 @@
 package com.example.team3Project.global.error;
 
 import com.example.team3Project.domain.policy.exception.PolicySettingNotFoundException;
+import com.example.team3Project.domain.policy.exception.BlockedWordAlreadyExistsException;
+import com.example.team3Project.domain.policy.exception.BlockedWordNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,5 +70,25 @@ public class GlobalExceptionHandler {
         // ErrorResponse dto에 내용을 담아 반환
         ErrorResponse response = new ErrorResponse(400, "잘못된 요청값입니다.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    // BlockedWordAlreadyExistsException(중복 금지어)이 발생했을 때 실행
+    @ExceptionHandler(BlockedWordAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleBlockedWordAlreadyExistsException(
+            BlockedWordAlreadyExistsException e
+    ){
+        // 409 : 충돌 상태 코드
+        ErrorResponse response = new ErrorResponse(409, e.getMessage());
+        // ResponseEntity에 HTTP 상태와 응답 바디를 담아 반환한다.
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    // BlockedWordNotFoundException이 발생했을 때 실행
+    @ExceptionHandler(BlockedWordNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlerBlockedWordNotFoundException(
+            BlockedWordNotFoundException e
+    ){
+        ErrorResponse response = new ErrorResponse(404, e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 }
