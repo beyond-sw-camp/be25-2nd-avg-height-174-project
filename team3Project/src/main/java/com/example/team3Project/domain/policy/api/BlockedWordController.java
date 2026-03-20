@@ -3,6 +3,7 @@ package com.example.team3Project.domain.policy.api;
 import com.example.team3Project.domain.policy.application.BlockedWordService;
 import com.example.team3Project.domain.policy.dto.BlockedWordCreateRequest;
 import com.example.team3Project.domain.policy.dto.BlockedWordResponse;
+import com.example.team3Project.domain.policy.dto.BlockedWordUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -60,6 +62,19 @@ public class BlockedWordController {
         return ResponseEntity.noContent().build();
         // Http 상태 코드 - 204(noContent)
         // 응답 body는 따로 보내지 않는다.
+    }
+
+    // PUT 요청을 처리한다. - 금지어 수정
+    @PutMapping("/{userBlockedWordId}")
+    public ResponseEntity<BlockedWordResponse> updateBlockedWord(
+            @PathVariable Long userBlockedWordId,       // URL 경로에 있는 금지어 ID를 받는다.
+            @RequestParam Long userId,                  // 어느 사용자의 요청인지 파라미터로 받음
+            @Valid @RequestBody BlockedWordUpdateRequest request    // JSON을 update dto 로 받는다.
+    ){
+        // 서비스에서 금지어 수정 로직을 처리한다.
+        BlockedWordResponse response = blockedWordService.updateBlockedWord(userId, userBlockedWordId, request);
+        // 수정 결과를 응답으로 보내준다.
+        return ResponseEntity.ok(response);
     }
 
     /*
