@@ -1,18 +1,17 @@
 package com.example.team3Project.global.error;
 
-import com.example.team3Project.domain.policy.exception.PolicySettingNotFoundException;
 import com.example.team3Project.domain.policy.exception.BlockedWordAlreadyExistsException;
 import com.example.team3Project.domain.policy.exception.BlockedWordNotFoundException;
+import com.example.team3Project.domain.policy.exception.PolicySettingNotFoundException;
+import com.example.team3Project.domain.policy.exception.ReplacementWordAlreadyExistsException;
+import com.example.team3Project.domain.policy.exception.ReplacementWordNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import java.util.LinkedHashMap;
-import java.util.HashMap;
-import java.util.Map;
 
-// 전역 예외 처리
+// 전역 예외 처리 - Service에서 발생한 예외를 ResponseEntity에 담아 반환한다.
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     /*// PolicySettingNotFoundException이 발생했을 때만 실행
@@ -87,6 +86,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BlockedWordNotFoundException.class)
     public ResponseEntity<ErrorResponse> handlerBlockedWordNotFoundException(
             BlockedWordNotFoundException e
+    ){
+        ErrorResponse response = new ErrorResponse(404, e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    // ReplacementWordAlreadyExistsException이 발생했을 때
+    @ExceptionHandler(ReplacementWordAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleReplacementWordAlreadyExistsException(
+            ReplacementWordAlreadyExistsException e
+    ){
+        ErrorResponse response = new ErrorResponse(409, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    // ReplacementWordNotFoundException이 발생했을 때 실행
+    @ExceptionHandler(ReplacementWordNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlerBlockedWordNotFoundException(
+            ReplacementWordNotFoundException e
     ){
         ErrorResponse response = new ErrorResponse(404, e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
