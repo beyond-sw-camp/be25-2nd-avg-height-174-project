@@ -1,4 +1,4 @@
-package com.example.team3Project.domain.sourcing;
+package com.example.team3Project.domain.sourcing.service;
 
 import java.util.Map;
 

@@ -1,4 +1,4 @@
-package com.example.team3Project.domain.sourcing;
+package com.example.team3Project.domain.sourcing.controller;
 
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.team3Project.domain.sourcing.DTO.SourcingDTO;
+import com.example.team3Project.domain.sourcing.entity.Sourcing;
+import com.example.team3Project.domain.sourcing.service.NormalizationService;
+import com.example.team3Project.domain.sourcing.service.SourcingService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -62,6 +67,11 @@ public class SourcingController {
         normalizationService.normalize(id);
         return "정규화 완료 상품 아이디: " + id;
 
+    }
+    // 테스트용 getMapping
+    @GetMapping("/get-test/{id}")
+    public Sourcing getTest(@PathVariable Long id) {
+        return sourcingService.getSourcingWithVariations(id);
     }
     
 
