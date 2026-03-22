@@ -1,4 +1,4 @@
-package com.example.team3Project.domain.sourcing;
+package com.example.team3Project.domain.sourcing.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -6,6 +6,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import com.example.team3Project.domain.sourcing.DTO.SourcingDTO;
+import com.example.team3Project.domain.sourcing.entity.Sourcing;
+import com.example.team3Project.domain.sourcing.entity.SourcingVariation;
+import com.example.team3Project.domain.sourcing.repository.SourcingRepository;
+import com.example.team3Project.domain.sourcing.repository.SourcingVariationRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +68,13 @@ public class SourcingService {
 
 
         return errors;    
+    }
+
+    // 일단 variation 제대로 되는지 확인 해보기 위한 메소드
+    @Transactional
+    public Sourcing getSourcingWithVariations(Long id) {
+        return sourcingRepository.findByIdWithVariations(id)
+                .orElseThrow(() -> new RuntimeException("상품 없음"));
     }
 
     @Transactional

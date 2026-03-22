@@ -1,12 +1,18 @@
-package com.example.team3Project.domain.sourcing;
+package com.example.team3Project.domain.sourcing.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+
+import com.example.team3Project.domain.sourcing.entity.Sourcing;
+import com.example.team3Project.domain.sourcing.entity.SourcingVariation;
+import com.example.team3Project.domain.sourcing.repository.SourcingRepository;
+import com.example.team3Project.domain.sourcing.repository.SourcingVariationRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -83,6 +89,16 @@ public class NormalizationService {
         List<SourcingVariation> variations = sourcing.getVariations();
         if (variations != null) {
             for (SourcingVariation variation : variations) {
+                // dimensions 값 번역
+                if (variation.getDimensions() != null) {
+                    Map<String, String> translatedDimensions = variation.getDimensions().entrySet().stream()
+                        .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> translationService.translateText(e.getValue())
+                        ));
+                    variation.setDimensions(translatedDimensions);
+                }
+
                 if (variation.getImages() == null) continue;
 
                 List<String> limited = variation.getImages().stream().limit(3).toList();

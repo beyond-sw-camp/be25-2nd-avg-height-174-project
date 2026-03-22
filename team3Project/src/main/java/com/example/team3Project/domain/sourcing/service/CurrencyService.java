@@ -1,4 +1,4 @@
-package com.example.team3Project.domain.sourcing;
+package com.example.team3Project.domain.sourcing.service;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.team3Project.domain.sourcing.entity.Sourcing;
+import com.example.team3Project.domain.sourcing.repository.SourcingRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

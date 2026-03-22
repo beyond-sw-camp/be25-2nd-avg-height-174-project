@@ -39,7 +39,7 @@ out/
 ### Local Env ###
 application-local.properties
 testNull.json
-.env.example
+.env
 
 ### Local Storage ###
 src/main/resources/storage/

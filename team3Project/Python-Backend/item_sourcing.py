@@ -5,9 +5,10 @@ AUTH = ('calendar_CjSKG', 'DBy6x9xqL_Hv')
 API_URL = 'https://realtime.oxylabs.io/v1/queries'
 
 # 1단계: amazon_search로 검색하여 첫 번째 상품의 ASIN 가져오기
+# 쿼리에 제미나이에서 받은 값을 넣어서 아이템 제목에 넣기.
 search_payload = {
     'source': 'amazon_search',
-    'query': 'Coca-Cola Zero Sugar Soda',
+    'query': 'Paldo Bibim Cold Noodle Instant Ramen 5 pack',
     'domain': 'com',
     'parse': True
 }
