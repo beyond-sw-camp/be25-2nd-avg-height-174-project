@@ -8,6 +8,7 @@ import com.example.team3Project.domain.policy.entity.UserReplacementWord;
 import com.example.team3Project.domain.policy.exception.ReplacementWordAlreadyExistsException;
 import com.example.team3Project.domain.policy.exception.ReplacementWordNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ReplacementWordService {
     private final UserReplacementWordRepository userReplacementWordRepository;
 
     // 치환어 1건을 등록하는 메서드
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public ReplacementWordResponse createReplacementWord(Long userId, ReplacementWordCreateRequest request) {
         // (사용자 ID, 원본단어) 쌍으로 조회하여 이미 해당 원본단어에 대해 치환어가 있는지 확인
         userReplacementWordRepository.findByUserIdAndSourceWord(userId, request.getSourceWord())
@@ -60,6 +62,7 @@ public class ReplacementWordService {
     }
 
     // 특정 사용자의 치환어 1건을 삭제하는 메서드
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public void deleteReplacementWord(Long userId, Long userReplacementWordId){
         // 치환어 ID를 바탕으로 DB에서 치환어 Entity를 가져온다.
         UserReplacementWord replacementWord = userReplacementWordRepository.findById(userReplacementWordId)
@@ -76,6 +79,7 @@ public class ReplacementWordService {
     }
 
     // 사용자의 치환어 1건을 수정하는 메서드
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public ReplacementWordResponse updateReplacementWord(
             Long userId,
             Long userReplacementWordId,

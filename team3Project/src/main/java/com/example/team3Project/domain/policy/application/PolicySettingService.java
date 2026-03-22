@@ -6,6 +6,7 @@ import com.example.team3Project.domain.policy.dto.PolicySettingUpsertRequest;
 import com.example.team3Project.domain.policy.entity.UserPolicySetting;
 import com.example.team3Project.domain.policy.exception.PolicySettingNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class PolicySettingService {
     // 해당 Repository를 통해서 DB 접근
     private final UserPolicySettingRepository userPolicySettingRepository;
 
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public PolicySettingResponse upsertPolicySetting(Long userId, PolicySettingUpsertRequest request){
         // JPA가 관리하는 entity 클래스
         UserPolicySetting setting = userPolicySettingRepository.findByUserId(userId)

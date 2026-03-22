@@ -8,6 +8,7 @@ import com.example.team3Project.domain.policy.exception.BlockedWordAlreadyExists
 import com.example.team3Project.domain.policy.exception.BlockedWordNotFoundException;
 import com.example.team3Project.domain.policy.dto.BlockedWordUpdateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class BlockedWordService {
     // - DB에 금지어를 저장
     // - 저장 결과를 응답 형태로 돌려줌 : 보통 등록 직후 화면에서 바로 보여주거나 응답으로 확인하는 경우가 많음
     // - (사용자 ID, 금지어) 쌍으로 검색했을 때에 조회 결과가 이미 존재하면 BlockedWordAlreadyExistsException을 던진다.
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public BlockedWordResponse createBlockedWord(Long userId, BlockedWordCreateRequest request) {
         userBlockedWordRepository.findByUserIdAndBlockedWord(userId, request.getBlockedWord())
                 .ifPresent(blockedWord -> {
@@ -71,6 +73,7 @@ public class BlockedWordService {
     }
 
     // 금지어를 삭제하는 메서드
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public void deleteBlockedWord(Long userId, Long userBlockedWordId) {
         // 금지어 ID로 조회 후 없으면 예외 던짐
         UserBlockedWord blockedWord = userBlockedWordRepository.findById(userBlockedWordId)
@@ -87,6 +90,7 @@ public class BlockedWordService {
 
     // 금지어를 수정하는 메서드
     // request에서 금지어의 ID와 수정할 금지어 문자열이 들어온다.
+    @CacheEvict(value = "policyBundle", key = "#userId")    // policyBundle 캐시에서 현재 사용자 userId에 해당하는 캐시 엔트리만 현재 메서드가 성공한 뒤 제거한다.
     public BlockedWordResponse updateBlockedWord(
             Long userId, Long userBlockedWordId, BlockedWordUpdateRequest request
     ) {

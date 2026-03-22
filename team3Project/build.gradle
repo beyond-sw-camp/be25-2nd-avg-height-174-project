@@ -44,6 +44,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// 캐시 추가
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
 }
 
 tasks.named('test') {
