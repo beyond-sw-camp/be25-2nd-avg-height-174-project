@@ -67,11 +67,16 @@ public class SourcingController {
         return "정규화 완료 상품 아이디: " + id;
 
     }
-    // 테스트용 getMapping
+
+    //테스트용 getMapping
     // @GetMapping("/get-test/{id}")
     // public Sourcing getTest(@PathVariable Long id) {
     //     return sourcingService.getSourcingWithVariations(id);
     // }
     
+    @PostMapping("/post-test/{id}")
+    public int postTest(@PathVariable int id) {
+        return id;
+    }
 
 }
