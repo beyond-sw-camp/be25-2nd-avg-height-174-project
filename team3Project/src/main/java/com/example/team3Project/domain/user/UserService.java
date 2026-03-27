@@ -36,7 +36,7 @@ public class UserService {
         }
 
         User user = new User();
-        user.setLoginId(request.getLoginId());
+        user.setLoginId(request.getUsername());
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
