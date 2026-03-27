@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>자동 소싱</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 40px;
+        }
+
+        h1 { font-size: 1.6rem; margin-bottom: 6px; color: #1a1a2e; }
+        .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 32px; }
+
+        .section { margin-bottom: 28px; }
+        .section label { font-weight: 600; display: block; margin-bottom: 10px; font-size: 0.95rem; }
+
+        .tag-input-wrap {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .tag-input-wrap input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        .tag-input-wrap input:focus { outline: none; border-color: #4361ee; }
+
+        .btn-add {
+            padding: 10px 18px;
+            background: #4361ee;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-add:hover { background: #3451d1; }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 36px;
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #eef0ff;
+            color: #4361ee;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+        .tag.banned { background: #fff0f0; color: #e63946; }
+        .tag button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            color: inherit;
+            padding: 0;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #4361ee;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .btn-submit:hover { background: #3451d1; }
+        .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+        /* 결과 영역 */
+        #result-area { margin-top: 32px; display: none; }
+        #result-area h2 { font-size: 1.1rem; margin-bottom: 14px; color: #1a1a2e; }
+
+        .result-meta {
+            background: #f0f4ff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .result-meta span { font-weight: 600; color: #4361ee; }
+
+        .result-items { display: flex; flex-direction: column; gap: 14px; }
+        .result-card {
+            border: 1.5px solid #e8e8e8;
+            border-radius: 10px;
+            padding: 16px 18px;
+            font-size: 0.9rem;
+        }
+        .result-card .product-title { font-weight: 600; font-size: 1rem; margin-bottom: 6px; }
+        .result-card .product-asin { color: #888; font-size: 0.82rem; margin-bottom: 8px; }
+        .result-card .product-price { color: #2d6a4f; font-weight: 600; }
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 30px 0;
+            color: #4361ee;
+            font-weight: 600;
+        }
+        .spinner {
+            display: inline-block;
+            width: 22px; height: 22px;
+            border: 3px solid #c8d0ff;
+            border-top-color: #4361ee;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-msg {
+            background: #fff0f0;
+            color: #e63946;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>자동 소싱</h1>
+    <p class="subtitle">계절성을 입력하면 Gemini가 키워드를 추천하고 아마존에서 상품을 가져옵니다.</p>
+
+    <!-- 계절성 -->
+    <div class="section">
+        <label>계절성</label>
+        <div class="tag-input-wrap">
+            <input type="text" id="season-input" placeholder="예: 1월, 여름, 크리스마스" />
+            <button class="btn-add" type="button" onclick="addTag('season')">추가</button>
+        </div>
+        <div class="tags" id="season-tags"></div>
+    </div>
+
+    <!-- 금지어 -->
+    <div class="section">
+        <label>금지어</label>
+        <div class="tag-input-wrap">
+            <input type="text" id="banned-input" placeholder="예: plastic, cheap" />
+            <button class="btn-add" type="button" onclick="addTag('banned')">추가</button>
+        </div>
+        <div class="tags" id="banned-tags"></div>
+    </div>
+
+    <button class="btn-submit" id="btn-submit" type="button" onclick="submitSourcing()">소싱 시작</button>
+
+    <div id="loading"><span class="spinner"></span>소싱 진행 중... (시간이 걸릴 수 있습니다)</div>
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- 결과 -->
+    <div id="result-area">
+        <h2>소싱 결과</h2>
+        <div class="result-meta" id="result-meta"></div>
+        <div class="result-items" id="result-items"></div>
+    </div>
+</div>
+
+<script>
+    const seasons = [];
+    const bannedWords = [];
+
+    function addTag(type) {
+        const inputId = type === 'season' ? 'season-input' : 'banned-input';
+        const tagsId  = type === 'season' ? 'season-tags'  : 'banned-tags';
+        const arr     = type === 'season' ? seasons          : bannedWords;
+        const cssClass = type === 'season' ? 'tag' : 'tag banned';
+
+        const input = document.getElementById(inputId);
+        const val = input.value.trim();
+        if (!val || arr.includes(val)) { input.value = ''; return; }
+
+        arr.push(val);
+        input.value = '';
+
+        const tagEl = document.createElement('span');
+        tagEl.className = cssClass;
+        tagEl.dataset.val = val;
+        tagEl.innerHTML = `${val} <button type="button" onclick="removeTag('${type}', '${val}', this)">×</button>`;
+        document.getElementById(tagsId).appendChild(tagEl);
+    }
+
+    function removeTag(type, val, btn) {
+        const arr = type === 'season' ? seasons : bannedWords;
+        const idx = arr.indexOf(val);
+        if (idx !== -1) arr.splice(idx, 1);
+        btn.parentElement.remove();
+    }
+
+    // Enter 키로도 추가
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('season-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTag('season'); });
+        document.getElementById('banned-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTag('banned'); });
+    });
+
+    async function submitSourcing() {
+        if (seasons.length === 0) {
+            showError('계절성을 최소 1개 이상 입력해주세요.');
+            return;
+        }
+
+        hideError();
+        setLoading(true);
+
+        try {
+            const resp = await fetch('/sourcing/auto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ seasons, banned_words: bannedWords })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.text();
+                throw new Error(err || '서버 오류가 발생했습니다.');
+            }
+
+            const data = await resp.json();
+            renderResult(data);
+        } catch (e) {
+            showError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function renderResult(data) {
+        const metaEl = document.getElementById('result-meta');
+        const itemsEl = document.getElementById('result-items');
+
+        metaEl.innerHTML = `추천 키워드: <span>${data.keywords.join(', ')}</span> &nbsp;|&nbsp; 처리 시간: <span>${data.elapsed}초</span>`;
+
+        itemsEl.innerHTML = '';
+        (data.results || []).forEach(item => {
+            const price = item.price ? `$${item.price}` : '가격 없음';
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+                <div class="product-title">${item.title || '제목 없음'}</div>
+                <div class="product-asin">ASIN: ${item.asin || '-'}</div>
+                <div class="product-price">${price}</div>
+            `;
+            itemsEl.appendChild(card);
+        });
+
+        document.getElementById('result-area').style.display = 'block';
+    }
+
+    function setLoading(on) {
+        document.getElementById('loading').style.display = on ? 'block' : 'none';
+        document.getElementById('btn-submit').disabled = on;
+        if (on) document.getElementById('result-area').style.display = 'none';
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('error-msg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function hideError() {
+        document.getElementById('error-msg').style.display = 'none';
+    }
+</script>
+</body>
+</html>

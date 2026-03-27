@@ -5,9 +5,15 @@ import os
 import google.generativeai as genai
 import json
 import time
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List
 
 load_dotenv()
 
+router = APIRouter()
+
+# 제미나이 키 싹다 넣기.
 GEMINI_API_KEY = os.getenv("NANOBANANA_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-3-flash-preview')
@@ -19,11 +25,16 @@ API_URL = 'https://realtime.oxylabs.io/v1/queries'
 semaphore = asyncio.Semaphore(3)
 
 
-def get_gemini_query(season: str) -> str:
+def get_gemini_query(season: str, banned_words: List[str] = None) -> str:
     """Gemini로 계절에 맞는 아마존 검색 키워드 생성"""
+    banned_section = ""
+    if banned_words:
+        banned_section = f"\n        다음 단어들은 절대 포함하지 마: {', '.join(banned_words)}"
+
     prompt = f"""
-        내가 계절성과 마진율을 알려줄테니 내가 미국 아마존에서 가져와서 사용할 물건의 이름을 영어로 알려줘.
-        무조건 이름만 알려주면 되는거야.
+        내가 계절성을 알려줄테니 내가 미국 아마존에서 가져와서 사용할 물건의 이름을 영어로 알려줘.
+        무조건 이름만 알려주면 되는거야.이것들은 그리고 금지어니까 이거 들어간 키워드는 넣지마:{banned_section}
+        상품은 하나만 가져와.
 
         계절성: {season}
         """
@@ -118,24 +129,40 @@ async def source_one_item(session: aiohttp.ClientSession, keyword: str) -> dict:
     return first_item
 
 
-async def main():
-    # 여러 계절에 대해 Gemini로 키워드 생성
-    seasons = ["1월", "7월"]
+
+
+# ── FastAPI 엔드포인트 ──────────────────────────────────────────
+
+class SourcingRequest(BaseModel):
+    seasons: List[str]
+    banned_words: List[str] = []
+
+
+@router.post("/sourcing")
+async def run_sourcing(req: SourcingRequest):
+    print(f"[FastAPI] 소싱 요청 - 계절성: {req.seasons}, 금지어: {req.banned_words}")
     print("Gemini 키워드 생성 중...")
-    keywords = [get_gemini_query(season) for season in seasons]
-    print(f"추천 키워드: {keywords}\n")
+
+    keywords = [get_gemini_query(season, req.banned_words) for season in req.seasons]
+    print(f"추천 키워드: {keywords}")
 
     start = time.time()
-
-    # 여러 상품을 asyncio.gather로 동시 소싱
     async with aiohttp.ClientSession(auth=AUTH) as session:
         results = await asyncio.gather(*[
             source_one_item(session, keyword) for keyword in keywords
         ])
 
     elapsed = time.time() - start
-    print(f"\n=== 총 처리 시간: {elapsed:.1f}초 ({len(keywords)}개 상품) ===")
-    print(json.dumps(results, indent=2, ensure_ascii=False))
+    print(f"=== 총 처리 시간: {elapsed:.1f}초 ===")
+
+    return {
+        "status": "success",
+        "keywords": keywords,
+        "elapsed": round(elapsed, 1),
+        "results": list(results)
+    }
+
+
 
 
 
