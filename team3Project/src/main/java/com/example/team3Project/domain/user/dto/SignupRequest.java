@@ -7,9 +7,6 @@ import lombok.Data;
 @Data
 public class SignupRequest {
 
-    @NotBlank(message = "로그인 아이디를 입력해주세요.")
-    private String loginId;
-
     @NotBlank(message = "아이디를 입력해주세요.")
     private String username;
 
