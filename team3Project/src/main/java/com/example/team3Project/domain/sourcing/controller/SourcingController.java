@@ -26,10 +26,6 @@ public class SourcingController {
     private final NormalizationService normalizationService;
 
 
-    @GetMapping("/")
-    public String mainHome() {
-        return "Hello World!";
-    }
     
     @GetMapping("/upload")
     public String uploadForm() {

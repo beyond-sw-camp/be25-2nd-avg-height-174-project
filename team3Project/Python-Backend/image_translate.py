@@ -13,6 +13,7 @@ from playwright.sync_api import sync_playwright
 
 # 분리된 텍스트 번역 라우터 임포트
 from text_translate import router as text_router
+from item_sourcing import router as sourcing_router
 
 """
 각자의 API키를 사용하도록 합시다!!!!!
@@ -24,6 +25,7 @@ app = FastAPI()
 
 # 텍스트 번역 라우터 추가 (이제 /translate_text 경로도 여기서 처리됨)
 app.include_router(text_router)
+app.include_router(sourcing_router)
 
 # NANOBANANA_API_KEY = os.getenv("NANOBANANA_API_KEY")
 NANOBANANA_API_KEY = os.getenv("NANOBANANA_API_KEY") # 여기에 자신의 geminiAI API키를 사용해주세요
