@@ -26,6 +26,12 @@ public class BlockedWordController {
     // 서비스 클래스 주입 - 비즈니스 로직은 해당 서비스 클래스에서 진행한다.
     private final BlockedWordService blockedWordService;
 
+
+    @PostMapping("/post-test/{id}")
+    public int postTest(@PathVariable int id) {
+        return id;
+    }
+
     // Post 요청을 처리한다. - 금지어 등록
     @PostMapping
     public ResponseEntity<BlockedWordResponse> createBlockedWord(
