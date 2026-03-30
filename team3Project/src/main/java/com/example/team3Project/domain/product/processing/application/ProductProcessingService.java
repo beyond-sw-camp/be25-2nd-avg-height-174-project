@@ -5,6 +5,7 @@ import com.example.team3Project.domain.policy.dto.BlockedWordResponse;
 import com.example.team3Project.domain.policy.dto.PolicyBundle;
 import com.example.team3Project.domain.policy.dto.ProductNameProcessingResponse;
 import com.example.team3Project.domain.policy.dto.ReplacementWordResponse;
+import com.example.team3Project.domain.policy.entity.MarketCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +21,9 @@ public class ProductProcessingService {
     private final PolicyQueryService policyQueryService;
 
     // 가공에 사용할 정책 묶음을 가져오는 메서드
-    public PolicyBundle getPolicyBundleForProcessing(Long userId) {
+    public PolicyBundle getPolicyBundleForProcessing(Long userId, MarketCode marketCode) {
 
-        return policyQueryService.getPolicyBundle(userId);
+        return policyQueryService.getPolicyBundle(userId, marketCode);
     }
 
     // 금지어 포함 여부를 검사하는 메서드
@@ -58,8 +59,8 @@ public class ProductProcessingService {
 
     // 상품명을 가공하는 메서드
     // 가공이 가능한 경우 가공된 상품명을 반환 금지어로 제외되는 경우 값을 비워서 반환
-    public Optional<String> processProductName(Long userId, String productName){
-        PolicyBundle policyBundle = getPolicyBundleForProcessing(userId);
+    public Optional<String> processProductName(Long userId, MarketCode marketCode, String productName){
+        PolicyBundle policyBundle = getPolicyBundleForProcessing(userId, marketCode);
 
         // 금지어가 포함되어 있는지 검사
         if(containsBlockedWord(productName, policyBundle)){
@@ -73,8 +74,8 @@ public class ProductProcessingService {
     }
 
     // 가공 결과를 응답 DTO에 담는 메서드
-    public ProductNameProcessingResponse processProductNameResponse(Long userId, String productName) {
-        Optional<String> processedResult = processProductName(userId, productName);
+    public ProductNameProcessingResponse processProductNameResponse(Long userId, MarketCode marketCode, String productName) {
+        Optional<String> processedResult = processProductName(userId, marketCode, productName);
 
         // 금지어가 포함되어 있어 가공에서 제외된 경우
         if (processedResult.isEmpty()) {

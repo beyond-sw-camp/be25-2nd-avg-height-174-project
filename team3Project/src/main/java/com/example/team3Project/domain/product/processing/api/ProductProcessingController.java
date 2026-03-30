@@ -2,6 +2,7 @@ package com.example.team3Project.domain.product.processing.api;
 
 import com.example.team3Project.domain.policy.dto.ProductNameProcessingRequest;
 import com.example.team3Project.domain.policy.dto.ProductNameProcessingResponse;
+import com.example.team3Project.domain.policy.entity.MarketCode;
 import com.example.team3Project.domain.product.processing.application.ProductProcessingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,12 @@ public class ProductProcessingController {
     // 상품명 가공 메서드
     public ResponseEntity<ProductNameProcessingResponse> processProductName(
             @RequestParam Long userId,
+            @RequestParam MarketCode marketCode,
             @Valid @RequestBody ProductNameProcessingRequest request
     ) {
-        // 서비스에서 상품명 가공로직을 실행함
+        // 서비스에서 상품명 가공 로직을 실행함
         ProductNameProcessingResponse response =
-                productProcessingService.processProductNameResponse(userId, request.getProductName());
+                productProcessingService.processProductNameResponse(userId, marketCode, request.getProductName());
 
         return ResponseEntity.ok(response);
     }
