@@ -183,6 +183,10 @@ AI 기반 자동 최적화 설정의 현재 기준은 다음과 같다.
 - 금지어 / 치환어 / 가격 정책 / 배송비 정책이 영향을 줄 수 있어야 한다.
 - 가공 결과는 실제 국내 마켓 등록 대신 더미 등록 DB에 저장할 수 있어야 한다.
 - 더미 등록 DB에는 정책 ID만이 아니라 계산 당시 핵심 값도 함께 저장할 수 있어야 한다.
+- 현재 가공 요청은 소싱 서비스에서 번역/정규화가 끝난 결과를 입력으로 받는 방향으로 정리한다.
+- 현재 가공 응답은 제외 여부, 제외 사유, 가공된 상품명/브랜드, 원가 통화, 적용 환율, 환율 적용 원가, 판매가, 배송비, 등록 상태를 포함한다.
+- 현재 판매가 계산은 배송비를 판매가와 분리하고, 환율, 목표 마진율, 최소 마진 보호 여부, 마켓/카드 수수료율, 단위 올림을 반영한다.
+- 금지어 포함 시 상품 가공은 조기 차단하고 등록 상태를 `BLOCKED`로 반환한다.
 
 더미 등록 DB에 함께 저장할 핵심 값 예시는 다음과 같다.
 - 적용 마켓
@@ -198,6 +202,8 @@ AI 기반 자동 최적화 설정의 현재 기준은 다음과 같다.
 #### 검토 필요
 - 자동 가공과 수동 수정의 경계
 - 원본 데이터와 가공 데이터의 분리 방식
+- 더미 등록 DB 저장 시 가공 응답 구조와 저장 구조를 어디까지 동일하게 맞출지
+- 번역 완료된 소싱 결과를 Eureka 기반으로 어떤 조회 API/DTO 계약으로 받을지
 
 ### 9. 마켓 등록
 #### 확정
@@ -292,21 +298,27 @@ AI 기반 자동 최적화 설정의 현재 기준은 다음과 같다.
 
 ## 현재 남아 있는 큰 작업
 1. 마켓별 정책 엔티티 / DTO / API 구조 확정
-2. 가격 계산 로직 구체화
-3. 가공 단계에 정책 적용 흐름 연결
-4. 더미 등록 DB 구조와 상태값 설계
+2. 상품 가공 결과를 더미 등록 DB에 저장하는 구조와 상태값 설계
+3. Eureka 기반으로 소싱 서비스의 번역/정규화 결과를 조회하는 연동 계약 확정
+4. 더미 등록 DB 저장 이후 등록 조회/상태 관리 흐름 연결
 5. 주문 / 발주 / 실패 상태 설계
 6. Redis와 MSA 도입 범위 확정
 
 ## 최근 반영 내용
-- 반영 일시: 2026-03-29
+- 반영 일시: 2026-04-01
 - 수정된 파일:
   - `.local-docs/current-requirements.md`
+  - `src/main/java/com/example/team3Project/domain/product/processing/api/ProductProcessingController.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/application/ProductProcessingService.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/dto/ProductProcessingRequest.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/dto/ProductProcessingResultResponse.java`
+  - `src/test/java/com/example/team3Project/domain/product/processing/application/ProductProcessingServiceTest.java`
 - 수정 유형:
   - 수정
 - 변경 요약:
-  - 마켓별 정책 구조와 사용자 공통 텍스트 정책 구조를 현재 합의 내용 기준으로 구체화했다.
-  - 자동 보호, 배송비, AI 기반 자동 최적화, 더미 등록 DB 저장 기준을 현재 구현 범위에 맞춰 반영했다.
+  - 번역/정규화가 끝난 소싱 결과를 입력으로 받는 상품 가공 DTO와 API 흐름을 반영했다.
+  - 금지어 차단, 환율/마진/수수료/단위 올림 반영 판매가 계산, 가공 서비스 테스트 추가 내용을 반영했다.
+  - 다음 단계 요구사항을 더미 등록 DB 저장과 Eureka 기반 소싱 연동으로 명확히 정리했다.
 - 문서 반영 사항:
-  - 정책 도메인을 사용자 기본 설정 중심에서 사용자 + 마켓 정책 구조로 명확히 전환했다.
-  - 상품 가공 이후 실제 외부 마켓 등록 대신 더미 등록 DB 저장을 현재 기준 흐름으로 고정했다.
+  - 현재 가공 서비스는 계산 응답까지 구현되었고 저장/연동은 다음 단계라는 점을 분리해 기록했다.
+  - 소싱 연동은 향후 MSA 환경에서 Eureka 기반 서비스 호출로 진행하는 방향을 명시했다.

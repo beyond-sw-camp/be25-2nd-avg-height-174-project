@@ -4,6 +4,8 @@ import com.example.team3Project.domain.policy.dto.ProductNameProcessingRequest;
 import com.example.team3Project.domain.policy.dto.ProductNameProcessingResponse;
 import com.example.team3Project.domain.policy.entity.MarketCode;
 import com.example.team3Project.domain.product.processing.application.ProductProcessingService;
+import com.example.team3Project.domain.product.processing.dto.ProductProcessingRequest;
+import com.example.team3Project.domain.product.processing.dto.ProductProcessingResultResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,5 +35,19 @@ public class ProductProcessingController {
                 productProcessingService.processProductNameResponse(userId, marketCode, request.getProductName());
 
         return ResponseEntity.ok(response);
+    }
+
+    // 상품 가공 메서드
+    @PostMapping
+    public ResponseEntity<ProductProcessingResultResponse> processProduct(
+            @RequestParam Long userId,
+            @RequestParam MarketCode marketCode,
+            @Valid @RequestBody ProductProcessingRequest request
+    ) {
+        ProductProcessingResultResponse response =
+                productProcessingService.processProduct(userId, marketCode, request);
+
+        return ResponseEntity.ok(response);
+
     }
 }

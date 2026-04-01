@@ -144,6 +144,8 @@
 - 선택한 마켓의 정책 묶음 조회
 - 상품 가공 요청 시 마켓별 가격 정책 + 사용자 공통 텍스트 정책 동시 적용
 - 가공 결과를 더미 등록 DB에 저장
+- 현재 가공 요청 DTO는 번역 완료된 상품명/브랜드, 원가, 통화, 이미지 정보를 받는 방향으로 정리한다.
+- 현재 가공 응답 DTO는 제외 여부, 제외 사유, 가공 결과 텍스트, 원가 통화, 적용 환율, 환율 적용 원가, 판매가, 배송비, 등록 상태를 반환한다.
 
 ## 다른 도메인과의 연결
 ### 상품 가공 도메인
@@ -179,9 +181,9 @@
 7. 현재 단계에서는 정책 수정 직후 정확성을 우선하여 캐시 없이 구현하고, 이후 정책 묶음 조회 부하가 커지면 Redis 기반 공유 캐시를 검토하기
 
 현재 기준으로 구현 범위는 다음과 같이 봅니다.
-- 실제 구현: 마켓별 정책 저장/조회, 금지어/치환어 CRUD, 상품 가공 시 금지어/치환어/환율/마진/수수료/단위 올림 반영, 최소 마진 보호, 환율 변동 감지 후 자동 재계산 배치, Amazon 가격 기준 자동 조정, 손실 발생 시 판매 중지, 더미 등록 DB 저장
+- 실제 구현: 마켓별 정책 저장/조회, 금지어/치환어 CRUD, 상품 가공 시 금지어/치환어/환율/마진/수수료/단위 올림 반영, 최소 마진 보호, 금지어 차단 시 조기 반환, 상품 가공 서비스 테스트
 - 저장만 우선: 손실 발생 시 실제 외부 마켓 판매중지 연동
-- 화면/구조 우선: 경쟁 상품 가격 자동 조정, 마켓별 실제 수수료 자동 조회 연동
+- 화면/구조 우선: 더미 등록 DB 저장, 경쟁 상품 가격 자동 조정, 마켓별 실제 수수료 자동 조회 연동, Eureka 기반 소싱 서비스 조회 연동
 
 ## 현재 상태 정리
 ### 확정에 가까운 내용
@@ -196,6 +198,8 @@
 - 정책 데이터 묶음 조회 방식
 - 다른 도메인과의 연결 방식
 - 더미 기준값을 활용한 Amazon 가격 자동 조정 방식
+- 가공 서비스와 소싱 서비스 간 Eureka 기반 연동 계약
+- 가공 결과와 더미 등록 DB 저장 구조 연결
 
 ### 검토 필요
 - 정책 세부 엔티티 분리 범위
@@ -205,16 +209,24 @@
 - MSA 분리 시 정책 서비스 경계
 - 조건부 무료배송 기준의 도입 시점과 실제 계산 규칙
 - 더미 등록 DB에 저장할 계산 핵심 값 범위
+- 번역/정규화 완료 소싱 데이터를 어떤 서비스 조회 방식으로 받을지
+- 가공 서비스가 소싱 서비스 DTO를 직접 의존할지, 별도 내부 DTO로 한 번 변환할지
 
 ## 최근 반영 내용
-- 반영 일시: 2026-03-29
+- 반영 일시: 2026-04-01
 - 수정된 파일:
   - `.local-docs/policy-domain-overview.md`
+  - `src/main/java/com/example/team3Project/domain/product/processing/api/ProductProcessingController.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/application/ProductProcessingService.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/dto/ProductProcessingRequest.java`
+  - `src/main/java/com/example/team3Project/domain/product/processing/dto/ProductProcessingResultResponse.java`
+  - `src/test/java/com/example/team3Project/domain/product/processing/application/ProductProcessingServiceTest.java`
 - 수정 유형:
   - 수정
 - 변경 요약:
-  - 마켓별 정책 구조, 배송비 정책, AI 기반 자동 최적화 설정을 정책 도메인 관점으로 재정리했다.
-  - 상품 가공 이후 더미 등록 DB 저장과 계산 당시 핵심 값 저장 방향을 문서에 반영했다.
+  - 번역 완료 소싱 결과를 입력으로 받는 상품 가공 DTO/API 방향과 계산 응답 구조를 문서에 반영했다.
+  - 금지어 차단, 환율/마진/수수료/단위 올림 반영 판매가 계산, 테스트 보강 내용을 현재 구현 범위로 정리했다.
+  - 다음 단계가 더미 등록 DB 저장과 Eureka 기반 소싱 연동이라는 점을 명시했다.
 - 문서 반영 사항:
-  - 정책 도메인의 저장 단위를 사용자 + 마켓 코드 기준으로 명확히 했다.
-  - 정책 적용 결과를 실제 외부 마켓이 아니라 더미 등록 흐름에 연결하는 현재 프로젝트 경계를 고정했다.
+  - 현재 정책 도메인은 계산 응답까지 연결되었고, 저장/연동은 별도 단계로 관리한다.
+  - 소싱 연동은 향후 Eureka 기반 MSA 흐름으로 연결하는 방향을 고정했다.
