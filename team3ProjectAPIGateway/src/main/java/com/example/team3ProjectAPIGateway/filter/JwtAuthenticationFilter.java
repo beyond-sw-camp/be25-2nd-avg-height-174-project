@@ -20,11 +20,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     //여기는 검증 안해도 되는 경로.
+    private static final String VIA_GATEWAY_HEADER = "X-Via-Api-Gateway";
+    private static final String VIA_GATEWAY_VALUE = "true";
+
     private static final List<String> PUBLIC_PATHS = List.of(
             "/auth/login",
             "/auth/signup",
             "/auth/find-id",
-            "/auth/reset-pw"
+            "/auth/reset-pw",
+            "/user/gateway-check"
     );
     // JWTUtil -> 검증용 키를 만들고 파싱하는 역할을 함.
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
@@ -37,7 +41,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath(); // 요청 경로를 가져옴.
         // 여기는 검증 안해도 되는 경로.
         if (isPublicPath(path)) {
-            return chain.filter(exchange); // 다음 필터 또는 서비스로 이동함.
+            ServerHttpRequest publicReq = exchange.getRequest().mutate()
+                    .header(VIA_GATEWAY_HEADER, VIA_GATEWAY_VALUE)
+                    .build();
+            return chain.filter(exchange.mutate().request(publicReq).build());
         }
 
         String authHeader = exchange.getRequest().getHeaders() // 요청 헤더를 가져옴.
@@ -58,6 +65,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         Claims claims = jwtUtil.parseClaims(token);
         // 유저 토큰을 하나씩 빼가며 유저 정보 가져오기.
         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                .header(VIA_GATEWAY_HEADER, VIA_GATEWAY_VALUE)
                 .header("X-User-Id", claims.getSubject())
                 .header("X-User-Name", claims.get("username", String.class))
                 .header("X-User-Nickname", claims.get("nickname", String.class))
@@ -76,7 +84,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return exchange.getResponse().setComplete(); // 응답 완료.
     }
 
-    @Override
+    @Override // 여기부터 시작하게 함.
     public int getOrder() { // 필터 순서 설정.
         return -1; // 가장 먼저 실행.
     }
