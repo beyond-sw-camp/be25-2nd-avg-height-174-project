@@ -137,6 +137,7 @@ public class UserController {
     public String update(@LoginUser User user,
                          @Valid @ModelAttribute("userForm") UserUpdateFormRequest formRequest,
                          BindingResult bindingResult,
+                         HttpServletRequest request,
                          Model model) {
         if (user == null) {
             return "redirect:/users/login";
@@ -147,7 +148,12 @@ public class UserController {
         }
 
         try {
-            userService.updateUserInfo(user.getId(), formRequest);
+            User updatedUser = userService.updateUserInfo(user.getId(), formRequest);  // 수정
+
+            // 세션 갱신 (닉네임 변경 즉시 반영)
+            SessionUtils.setLoginUser(request,
+                    new SessionUser(updatedUser.getId(), updatedUser.getUsername(), updatedUser.getNickname()));  // 추가
+
             log.info("사용자 정보 수정 성공: userId={}", user.getId());
             return "redirect:/users/me";
         } catch (IllegalArgumentException e) {

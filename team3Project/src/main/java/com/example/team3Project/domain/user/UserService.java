@@ -32,7 +32,7 @@ public class UserService {
     public User signup(SignupRequest request) {
         Optional<User> existingUser = userRepository.findByUsername(request.getUsername());
         if (existingUser.isPresent()) {
-            throw new IllegalStateException("이미 존재하는 아이디입니다.");
+            throw new IllegalStateException("?��? 존재?�는 ?�이?�입?�다.");
         }
 
         User user = new User();
@@ -52,17 +52,17 @@ public class UserService {
                 .orElseThrow(() -> new LoginException(LoginErrorType.USERNAME_NOT_FOUND));
 
         if (user.isLocked()) {
-            log.warn("로그인 시도 - 잠긴 계정: username={}", request.getUsername());
+            log.warn("로그???�도 - ?�긴 계정: username={}", request.getUsername());
             throw new LoginException(LoginErrorType.ACCOUNT_LOCKED);
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             user.increaseLoginFailCount();
-            log.warn("로그인 실패 - 비밀번호 불일치: username={}, 실패횟수={}",
+            log.warn("로그???�패 - 비�?번호 불일�? username={}, ?�패?�수={}",
                     request.getUsername(), user.getLoginFailCount());
 
             if (user.isLocked()) {
-                log.warn("계정 잠김 처리: username={}", request.getUsername());
+                log.warn("계정 ?��? 처리: username={}", request.getUsername());
                 throw new LoginException(LoginErrorType.ACCOUNT_LOCKED);
             }
 
@@ -73,34 +73,34 @@ public class UserService {
             user.resetLoginFailCount();
         }
 
-        log.info("로그인 성공: username={}", request.getUsername());
+        log.info("로그???�공: username={}", request.getUsername());
         return user;
     }
 
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�용?��? 찾을 ???�습?�다."));
 
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("?�재 비�?번호가 ?�치?��? ?�습?�다.");
         }
 
         if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("새 비밀번호는 최소 8자 이상이어야 합니다.");
+            throw new IllegalArgumentException("??비�?번호??최소 8???�상?�어???�니??");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        log.info("비밀번호 변경 완료: userId={}", userId);
+        log.info("비�?번호 변�??�료: userId={}", userId);
     }
 
     @Transactional
     public void unlockAccount(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�용?��? 찾을 ???�습?�다."));
 
         user.unlock();
-        log.info("계정 잠김 해제: userId={}", userId);
+        log.info("계정 ?��? ?�제: userId={}", userId);
     }
 
     public Optional<User> findById(Long id) {
@@ -110,22 +110,23 @@ public class UserService {
     @Transactional
     public User updateUser(Long userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�용?��? 찾을 ???�습?�다."));
 
         user.setNickname(request.getNickname());
-        log.info("사용자 정보 수정 완료: userId={}", userId);
+        log.info("?�용???�보 ?�정 ?�료: userId={}", userId);
         return user;
     }
 
     @Transactional
-    public void updateUserInfo(Long userId, UserUpdateFormRequest request) {
+    public User updateUserInfo(Long userId, UserUpdateFormRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�용?��? 찾을 ???�습?�다."));
 
         user.setNickname(request.getNickname());
         user.setEmail(request.getEmail());
         user.setName(request.getNickname());
         log.info("사용자 프로필 수정 완료: userId={}", userId);
+        return user;  // 추가
     }
 
     public void sendPasswordResetCode(String loginIdOrEmail) {
@@ -134,7 +135,7 @@ public class UserService {
 
         String code = verificationCodeStore.generateAndStore(user.getEmail());
         emailService.sendVerificationCode(user.getEmail(), code);
-        log.info("비밀번호 재설정 인증코드 발송: userId={}, email={}", user.getId(), user.getEmail());
+        log.info("비�?번호 ?�설???�증코드 발송: userId={}, email={}", user.getId(), user.getEmail());
     }
 
     public void verifyPasswordResetCode(String loginIdOrEmail, String code) {
@@ -143,10 +144,10 @@ public class UserService {
 
         boolean valid = verificationCodeStore.verifyAndConsume(user.getEmail(), code);
         if (!valid) {
-            throw new IllegalArgumentException("유효하지 않거나 만료된 인증코드입니다.");
+            throw new IllegalArgumentException("?�효?��? ?�거??만료???�증코드?�니??");
         }
         verificationCodeStore.markAsVerified(user.getEmail());
-        log.info("비밀번호 재설정 인증코드 검증 성공: userId={}", user.getId());
+        log.info("비�?번호 ?�설???�증코드 검�??�공: userId={}", user.getId());
     }
 
     @Transactional
@@ -156,15 +157,15 @@ public class UserService {
 
         boolean valid = verificationCodeStore.verifyAndConsume(user.getEmail(), code);
         if (!valid) {
-            throw new IllegalArgumentException("유효하지 않거나 만료된 인증코드입니다.");
+            throw new IllegalArgumentException("?�효?��? ?�거??만료???�증코드?�니??");
         }
 
         if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("새 비밀번호는 최소 8자 이상이어야 합니다.");
+            throw new IllegalArgumentException("??비�?번호??최소 8???�상?�어???�니??");
         }
 
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new IllegalArgumentException("새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+            throw new IllegalArgumentException("??비�?번호??기존 비�?번호?� ?�라???�니??");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -172,7 +173,7 @@ public class UserService {
         if (user.isLocked()) {
             user.unlock();
         }
-        log.info("비밀번호 재설정 완료: userId={}", user.getId());
+        log.info("비�?번호 ?�설???�료: userId={}", user.getId());
     }
 
     @Transactional
@@ -181,23 +182,23 @@ public class UserService {
                 .orElseThrow(() -> new LoginException(LoginErrorType.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("비�?번호가 ?�치?��? ?�습?�다.");
         }
 
         userRepository.delete(user);
-        log.info("회원 탈퇴 완료: userId={}", userId);
+        log.info("?�원 ?�퇴 ?�료: userId={}", userId);
     }
 
     public String findUsernameByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�치?�는 ?�원 ?�보가 ?�습?�다."));
         return user.getUsername();
     }
 
     @Transactional
     public void resetPassword(String username, String email) {
         User user = userRepository.findByUsernameAndEmail(username, email)
-                .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("?�치?�는 ?�원 ?�보가 ?�습?�다."));
 
         String tempPassword = createTempPassword();
 
@@ -208,7 +209,7 @@ public class UserService {
         }
 
         emailService.sendTemporaryPassword(user.getEmail(), tempPassword);
-        log.info("임시 비밀번호 발급 완료: userId={}, email={}", user.getId(), user.getEmail());
+        log.info("?�시 비�?번호 발급 ?�료: userId={}, email={}", user.getId(), user.getEmail());
     }
 
     private Optional<User> findUserByLoginIdOrEmail(String loginIdOrEmail) {
