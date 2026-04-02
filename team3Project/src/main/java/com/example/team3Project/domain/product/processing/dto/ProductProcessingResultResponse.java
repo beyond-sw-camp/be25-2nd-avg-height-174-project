@@ -1,5 +1,6 @@
 package com.example.team3Project.domain.product.processing.dto;
 
+import com.example.team3Project.domain.product.registration.entity.RegistrationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
