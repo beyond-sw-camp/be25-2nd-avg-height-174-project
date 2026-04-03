@@ -32,11 +32,11 @@ public class SourcingController {
             @RequestBody SourcingDTO sourcingDTO) {
         Map<String, Object> response = new HashMap<>();
 
-        // API Gateway에서 X-User-Id 헤더를 받아서 유저 맞는지 확인.
+        // API Gateway(JWT 검증 후 X-User-Id 주입)만 신뢰. fallback 없음.
         Long userId = parseUserId(xUserId);
         if (userId == null) {
             response.put("status", "error");
-            response.put("message", "인증이 필요합니다. API Gateway를 경유하거나 X-User-Id 헤더가 필요합니다.");
+            response.put("message", "인증이 필요합니다. API Gateway(9000)로 Bearer JWT를 보내 주세요.");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
         // 소싱한 데이터 맞는지 확인.
@@ -65,12 +65,11 @@ public class SourcingController {
         return ResponseEntity.ok(response);
     }
 
-    // API Gateway에서 받은 헤더를 파싱해서 유저 ID를 가져옴.
     private static Long parseUserId(String headerValue) {
-        if (headerValue == null || headerValue.isBlank()) {// 헤더가 잘못된 값이면 null 반환.
+        if (headerValue == null || headerValue.isBlank()) {
             return null;
         }
-        try {// 숫자가 아니면 바로 예외로 null 반환.
+        try {
             return Long.parseLong(headerValue.trim());
         } catch (NumberFormatException ex) {
             return null;
