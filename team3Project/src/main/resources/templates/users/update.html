@@ -55,6 +55,16 @@
             </div>
 
             <div class="form-group">
+                <label for="phoneNumber">전화번호</label>
+                <input type="tel" id="phoneNumber" th:field="*{phoneNumber}"
+                       th:class="${#fields.hasErrors('phoneNumber')} ? 'field-error' : ''" required
+                       placeholder="예: 010-1234-5678">
+                <div class="error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">
+                    전화번호 오류
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="email">이메일</label>
                 <input type="email" id="email" th:field="*{email}"
                        th:class="${#fields.hasErrors('email')} ? 'field-error' : ''" required>

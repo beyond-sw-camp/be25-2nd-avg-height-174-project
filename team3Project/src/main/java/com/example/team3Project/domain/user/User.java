@@ -30,6 +30,9 @@ public class User {
     @Column(nullable = false)
     private String nickname;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
     @Column(nullable = false)
     private int loginFailCount = 0;
 

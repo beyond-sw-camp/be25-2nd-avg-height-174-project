@@ -39,8 +39,9 @@ public class UserService {
         user.setLoginId(request.getUsername());
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setName(request.getNickname());
+        user.setPhoneNumber(request.getPhoneNumber());
         user.setNickname(request.getNickname());
 
         return userRepository.save(user);
@@ -124,7 +125,7 @@ public class UserService {
 
         user.setNickname(request.getNickname());
         user.setEmail(request.getEmail());
-        user.setName(request.getNickname());
+        user.setPhoneNumber(request.getPhoneNumber());
         log.info("사용자 프로필 수정 완료: userId={}", userId);
         return user;  // 추가
     }

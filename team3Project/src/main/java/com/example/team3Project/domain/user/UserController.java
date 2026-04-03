@@ -127,6 +127,7 @@ public class UserController {
         }
         UserUpdateFormRequest formRequest = new UserUpdateFormRequest();
         formRequest.setNickname(user.getNickname());
+        formRequest.setPhoneNumber(user.getPhoneNumber());
         formRequest.setEmail(user.getEmail());
         model.addAttribute("userForm", formRequest);
 
