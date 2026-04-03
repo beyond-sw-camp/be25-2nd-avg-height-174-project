@@ -261,6 +261,13 @@
 <div class="container">
     <h1>자동 소싱</h1>
     <p class="subtitle">계절성을 입력하면 Gemini가 키워드를 추천하고 아마존에서 상품을 가져옵니다.</p>
+    <p class="subtitle" style="margin-top:-12px;font-size:0.82rem;color:#666;line-height:1.45;">
+        POST 요청은 <strong>API Gateway에서 JWT 검증</strong>을 거칩니다. JWT는 <code>HttpOnly</code> 쿠키(<code>token</code>)로만 전달되며,
+        아래 fetch에 <code>credentials: 'include'</code>가 있으면 브라우저가 같은 사이트 쿠키를 자동으로 보냅니다.
+        <span th:if="${sourcingApiOrigin != null and !#strings.isEmpty(sourcingApiOrigin)}">
+            (8080에서 이 페이지를 열었을 때 API 베이스: <code th:text="${sourcingApiOrigin}">http://localhost:9000</code>)
+        </span>
+    </p>
 
     <!-- 계절성 -->
     <div class="section">
@@ -316,10 +323,27 @@
     </div>
 </div>
 
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.SOURCING_CFG = {
+        apiOrigin: /*[[${sourcingApiOrigin}]]*/ ''
+    };
+    /*]]>*/
+</script>
 <script>
     const seasons = [];
     const bannedWords = [];
     let lastResults = [];
+
+    function sourcingApiUrl(path) {
+        const o = (window.SOURCING_CFG && window.SOURCING_CFG.apiOrigin) || '';
+        if (!path.startsWith('/')) path = '/' + path;
+        return o ? (o.replace(/\/$/, '') + path) : path;
+    }
+
+    function sourcingAuthHeaders() {
+        return { 'Content-Type': 'application/json' };
+    }
 
     function addTag(type) {
         const inputId = type === 'season' ? 'season-input' : 'banned-input';
@@ -366,9 +390,9 @@
         try {
             const itemCountEl = document.querySelector('input[name="item-count"]:checked');
             const item_count = itemCountEl ? parseInt(itemCountEl.value, 10) : 1;
-            const resp = await fetch('/sourcing/auto', {
+            const resp = await fetch(sourcingApiUrl('/sourcing/auto'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: sourcingAuthHeaders(),
                 body: JSON.stringify({
                     seasons,
                     banned_words: bannedWords,
@@ -411,9 +435,9 @@
     }
     // 파싱후 데이터가 잘 들어왔는지 확인하기.
     async function postSourcingUpload(payload) {
-        const resp = await fetch('/sourcing/upload', {
+        const resp = await fetch(sourcingApiUrl('/sourcing/upload'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: sourcingAuthHeaders(),
             body: JSON.stringify(payload),
             credentials: 'include',
         });

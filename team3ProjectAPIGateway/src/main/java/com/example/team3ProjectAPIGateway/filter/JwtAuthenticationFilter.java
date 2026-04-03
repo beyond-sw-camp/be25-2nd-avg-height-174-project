@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
@@ -34,7 +35,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     /**
      * JWT 없이 통과시킬 경로 (게이트웨이는 막지 않음). 인증은 각 백엔드(세션/JWT)가 담당.
      * - /users/** : USER-SERVICE Thymeleaf·폼 (로그인 후 /users/update, /users/me 등) — 복수 users
-     * - /sourcing/** GET·HEAD·OPTIONS : 폼 HTML만 (POST 는 X-User-Id 위해 게이트웨이에서 JWT 필요)
+     * - /sourcing/** GET·HEAD·OPTIONS : 폼 HTML·CORS preflight
+     * - POST /sourcing/auto, /sourcing/upload : Bearer JWT 또는 HttpOnly 쿠키 {@code token} (게이트웨이가 X-User-Id 주입)
      * - /user/**  : 아래 목록 제외 시 게이트웨이에서 Bearer JWT 필수 — 단수 user (REST)
      */
     private static final List<String> PUBLIC_PATHS = List.of(
@@ -118,8 +120,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return PUBLIC_PATHS.stream().anyMatch(prefix -> path.startsWith(prefix));
     }
 
+    
     private static boolean isSourcingReadOrCors(HttpMethod method) {
         return method == HttpMethod.GET || method == HttpMethod.HEAD || method == HttpMethod.OPTIONS;
+    }
+
+    /** Authorization: Bearer 우선, 없으면 브라우저가 보낸 HttpOnly 쿠키 {@code token}. */
+    private static String resolveJwtToken(ServerHttpRequest request) {
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
+        }
+        HttpCookie cookie = request.getCookies().getFirst("token");
+        return cookie != null ? cookie.getValue() : null;
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange) { // 권한 없음. 401 응답 반환.
