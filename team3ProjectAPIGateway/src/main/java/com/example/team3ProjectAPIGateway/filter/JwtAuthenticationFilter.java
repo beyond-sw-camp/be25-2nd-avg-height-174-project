@@ -29,7 +29,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final JwtUtil jwtUtil;
     private static final String VIA_GATEWAY_HEADER = "X-Via-Api-Gateway";
     private static final String VIA_GATEWAY_VALUE = "true";
-    /** USER-SERVICE 로그인 시 발급하는 HttpOnly 쿠키 (브라우저 fetch + credentials 시 전달) */
+    /** USER-SERVICE 로그인 시 발급하는 HttpOnly 쿠키 헤더를 통해서 전달하는 토큰 */
     private static final String ACCESS_TOKEN_COOKIE = "token";
 
     /**
@@ -51,24 +51,26 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     // 모든 요청들은 여기로 들어옴. exchage = 모든 요청, 응답을 가지고 있음. chain = 다음 필터 또는 서비스로 이동함.
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
-        HttpMethod method = exchange.getRequest().getMethod();
+        String path = exchange.getRequest().getURI().getPath(); // 유저가 요청한 경로만 뽑는것. /sourcing/auto 이런식으로.
+        HttpMethod method = exchange.getRequest().getMethod(); // 유저가 요청한 메서드만 뽑는것. GET, POST 이런식으로.
         if (isPublicPath(path, method)) {
             // 브라우저가 남긴 Bearer(만료/잘못된 토큰)이 그대로 넘어가면 USER-SERVICE OAuth2/Security 가 401 을 낼 수 있음
             ServerHttpRequest publicReq = exchange.getRequest().mutate()
                     .headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
                     .header(VIA_GATEWAY_HEADER, VIA_GATEWAY_VALUE)
                     .build();
-            return chain.filter(exchange.mutate().request(publicReq).build());
+            return chain.filter(exchange.mutate().request(publicReq).build()); // 다음 필터 또는 서비스로 이동함.
         }
 
-        String token = resolveAccessToken(exchange.getRequest());
+        String token = resolveAccessToken(exchange.getRequest()); // 유저가 요청한 토큰을 뽑는것.
         log.info("[JWT] path={}, method={}, tokenFound={}", path, method, token != null);
+        /* 전체적으로 토큰이 유효한지 확인하는 코드들*/
+        // 토큰이 없거나 비어있는지 확인.
         if (token == null || token.isBlank()) {
             log.warn("[JWT] 토큰 없음 → 401: path={}", path);
-            return unauthorized(exchange);
+            return unauthorized(exchange); // 401 응답 반환.
         }
-
+        // token이 유효한지 확인하는것.
         if (!jwtUtil.isValid(token)) {
             log.warn("[JWT] 토큰 검증 실패 → 401: path={}, token={}...{}", path,
                     token.substring(0, Math.min(20, token.length())),
@@ -106,7 +108,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String v = c.getValue();
         return v != null ? v.trim() : null;
     }
-
+    // 공개 경로인지 확인하는 메서드
     private boolean isPublicPath(String path, HttpMethod method) {
         if ("/".equals(path)) {
             return true;
@@ -120,7 +122,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return PUBLIC_PATHS.stream().anyMatch(prefix -> path.startsWith(prefix));
     }
 
-    
+    // Sourcing 서비스에서 읽기 또는 CORS 요청인지 확인하는 메서드
     private static boolean isSourcingReadOrCors(HttpMethod method) {
         return method == HttpMethod.GET || method == HttpMethod.HEAD || method == HttpMethod.OPTIONS;
     }
