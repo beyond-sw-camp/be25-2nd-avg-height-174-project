@@ -118,6 +118,7 @@ class DummyProductRegistrationControllerTest {
                 MarketCode.COUPANG,
                 sourceProductId,
                 "https://www.amazon.com/dp/" + sourceProductId,
+                "https://www.amazon.com/images/" + sourceProductId + ".jpg",
                 processedProductName,
                 "브랜드",
                 BigDecimal.valueOf(10),

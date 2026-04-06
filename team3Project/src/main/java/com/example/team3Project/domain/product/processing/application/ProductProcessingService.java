@@ -176,6 +176,7 @@ public class ProductProcessingService {
                         marketCode,
                         request.getSourceProductId(),
                         request.getSourceUrl(),
+                        request.getMainImageUrl(),
                         processedProductName,
                         processedBrand,
                         request.getOriginalPrice(),

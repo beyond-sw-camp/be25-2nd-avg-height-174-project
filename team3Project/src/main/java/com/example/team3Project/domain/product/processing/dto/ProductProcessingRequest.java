@@ -47,4 +47,29 @@ public class ProductProcessingRequest {
     // 소싱의 images
     @NotEmpty
     private List<String> descriptionImageUrls;
+
+    // 소싱 서비스 응답을 받아서 가공 흐름으로 넘길 때 사용할 객체
+    // 정적 팩토리 메서드 - 클래스가 자기 자신을 만들어서 반환하는 static 메서드
+    // 생성자 로직을 숨길 수 있음
+    public static ProductProcessingRequest of(
+            String sourceProductId,
+            String sourceUrl,
+            String translatedProductName,
+            String translatedBrand,
+            BigDecimal originalPrice,
+            String currency,
+            String mainImageUrl,
+            List<String> descriptionImageUrls
+    ) {
+        ProductProcessingRequest request = new ProductProcessingRequest();
+        request.sourceProductId = sourceProductId;
+        request.sourceUrl = sourceUrl;
+        request.translatedProductName = translatedProductName;
+        request.translatedBrand = translatedBrand;
+        request.originalPrice = originalPrice;
+        request.currency = currency;
+        request.mainImageUrl = mainImageUrl;
+        request.descriptionImageUrls = descriptionImageUrls;
+        return request;
+    }
 }

@@ -66,11 +66,3 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// 애플리케이션 실행 시 브라우저 자동 오픈
-tasks.named('bootRun') {
-	doFirst {
-		exec {
-			commandLine 'cmd', '/c', 'start', 'http://localhost:8080'
-		}
-	}
-}
