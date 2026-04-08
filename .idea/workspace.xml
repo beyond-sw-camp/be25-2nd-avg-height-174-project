@@ -5,29 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4c3ba028-ee6b-4691-8ea6-486c65fcd6c7" name="변경" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/be25-2nd-avg-height-174-project.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/home/HomeController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/User.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/LoginRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SessionUser.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SignupRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/SecurityConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/WebConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/interceptor/LoginCheckInterceptor.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/util/SessionUtils.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/home.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/loginHome.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/login.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/signup.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/team3Project/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SignupRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SignupRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/interceptor/JwtCheckInterceptor.java" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/interceptor/JwtCheckInterceptor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/team3Project/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/signup.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,19 +52,23 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "git-widget-placeholder": "jiyeon",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Playdata/Documents/GitHub/be25-2nd-avg-height-174-project",
+    "nodejs_package_manager_path": "npm",
     "project.structure.last.edited": "프로젝트",
     "project.structure.proportion": "0.0",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "editor.preferences.tabs"
+    "settings.editor.selected.configurable": "editor.preferences.tabs",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
       </set>
     </attachedChunks>
   </component>
@@ -87,7 +79,11 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1773901987449</updated>
+      <workItem from="1775618304907" duration="72000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
 </project>

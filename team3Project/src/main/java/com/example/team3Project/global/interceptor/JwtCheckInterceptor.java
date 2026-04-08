@@ -20,6 +20,23 @@ public class JwtCheckInterceptor implements HandlerInterceptor {
         String requestURI = request.getRequestURI();
         log.debug("JWT 인증 체크: {}", requestURI);
 
+        // 인증 불필요 경로 바로 통과
+        if (requestURI.startsWith("/users/login") ||
+            requestURI.startsWith("/users/logout") ||
+            requestURI.startsWith("/users/signup") ||
+            requestURI.startsWith("/users/check-username") ||
+            requestURI.startsWith("/users/find-id") ||
+            requestURI.startsWith("/users/reset-pw") ||
+            requestURI.startsWith("/oauth2") ||
+            requestURI.startsWith("/login/oauth2") ||
+            requestURI.startsWith("/css") ||
+            requestURI.startsWith("/js") ||
+            requestURI.startsWith("/images") ||
+            requestURI.equals("/") ||
+            requestURI.equals("/favicon.ico")) {
+            return true;
+        }
+
         // JWT 토큰 추출
         String token = jwtUtil.resolveToken(request);
 

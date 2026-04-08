@@ -21,6 +21,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -33,47 +38,31 @@ public class UserController {
 
     @GetMapping("/login")
     public String loginForm(@RequestParam(defaultValue = "/") String redirectURL,
+                            @RequestParam(required = false) String error,
+                            @RequestParam(required = false) String username,
                             Model model) {
         if (!model.containsAttribute("loginRequest")) {
-            model.addAttribute("loginRequest", new LoginRequest());
+            LoginRequest loginRequest = new LoginRequest();
+            if (username != null && !username.isEmpty()) {
+                loginRequest.setUsername(username);
+            }
+            model.addAttribute("loginRequest", loginRequest);
         }
         model.addAttribute("redirectURL", redirectURL);
+
+        // Spring Security 인증 실패 에러 처리
+        if (error != null) {
+            String errorMessage = switch (error) {
+                case "social" -> "소셜 로그인 계정입니다. 해당 소셜 서비스로 로그인해주세요.";
+                case "locked" -> "계정이 잠겼습니다. 관리자에게 문의하세요.";
+                case "password" -> "비밀번호가 일치하지 않습니다.";
+                case "username" -> "아이디를 찾을 수 없습니다.";
+                default -> "로그인에 실패했습니다. 다시 시도해주세요.";
+            };
+            model.addAttribute("loginError", errorMessage);
+        }
+
         return "users/login";
-    }
-
-    @PostMapping("/login")
-    public String login(@Valid @ModelAttribute LoginRequest loginRequest,
-                        BindingResult bindingResult,
-                        @RequestParam(defaultValue = "/") String redirectURL,
-                        HttpServletResponse response,
-                        Model model) {
-
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("redirectURL", redirectURL);
-            return "users/login";
-        }
-
-        try {
-            User loginUser = userService.login(loginRequest);
-
-            // JWT 토큰 생성 및 HttpOnly Cookie 설정
-            String token = jwtUtil.generateToken(
-                    loginUser.getId(),
-                    loginUser.getUsername(),
-                    loginUser.getNickname()
-            );
-            ResponseCookie cookie = jwtUtil.createJwtCookie(token);
-            response.addHeader("Set-Cookie", cookie.toString());
-
-            log.info("로그인 성공: userId={}, redirectURL={}", loginUser.getId(), redirectURL);
-            return "redirect:" + redirectURL;
-
-        } catch (LoginException e) {
-            model.addAttribute("errorType", e.getErrorType());
-            model.addAttribute("loginRequest", loginRequest);
-            model.addAttribute("redirectURL", redirectURL);
-            return "users/login";
-        }
     }
 
     @GetMapping("/signup")
@@ -82,10 +71,37 @@ public class UserController {
         return "users/signup";
     }
 
+    /**
+     * 아이디 중복 확인 API (AJAX용)
+     */
+    @GetMapping("/check-username")
+    @ResponseBody
+    public Map<String, Object> checkUsername(@RequestParam String username) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (username == null || username.trim().isEmpty()) {
+            response.put("available", false);
+            response.put("message", "아이디를 입력해주세요.");
+            return response;
+        }
+
+        boolean available = userService.isUsernameAvailable(username);
+        response.put("available", available);
+        response.put("message", available ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.");
+
+        return response;
+    }
+
     @PostMapping("/signup")
     public String signup(@Valid @ModelAttribute("user") SignupRequest signupRequest,
                          BindingResult bindingResult,
-                         Model model) {
+                         Model model,
+                         RedirectAttributes redirectAttributes) {
+
+        // 비밀번호 확인 검증
+        if (!signupRequest.getPassword().equals(signupRequest.getConfirmPassword())) {
+            bindingResult.rejectValue("confirmPassword", "passwordMismatch", "비밀번호가 일치하지 않습니다.");
+        }
 
         if (bindingResult.hasErrors()) {
             return "users/signup";
@@ -94,10 +110,12 @@ public class UserController {
         try {
             userService.signup(signupRequest);
             log.info("회원가입 성공: username={}", signupRequest.getUsername());
+            redirectAttributes.addFlashAttribute("signupSuccess", "회원가입이 완료되었습니다. 로그인해주세요.");
             return "redirect:/users/login";
 
         } catch (IllegalStateException e) {
-            model.addAttribute("errorMessage", e.getMessage());
+            // 중복 아이디 에러를 BindingResult에 추가 (전체 에러로 표시)
+            bindingResult.reject("duplicateUsername", e.getMessage());
             return "users/signup";
         }
     }
