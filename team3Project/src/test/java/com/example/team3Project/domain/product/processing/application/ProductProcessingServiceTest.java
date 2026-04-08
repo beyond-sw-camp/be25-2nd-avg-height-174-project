@@ -10,6 +10,7 @@ import com.example.team3Project.domain.policy.entity.PriceRoundingUnit;
 import com.example.team3Project.domain.policy.entity.ShippingFeeType;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingRequest;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingResultResponse;
+import com.example.team3Project.domain.product.processing.dto.SourcingVariationResponse;
 import com.example.team3Project.domain.product.registration.application.ProductRegistrationService;
 import com.example.team3Project.domain.product.registration.entity.DummyProductRegistration;
 import com.example.team3Project.domain.product.registration.entity.RegistrationStatus;
@@ -20,6 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +42,6 @@ class ProductProcessingServiceTest {
     @Test
     @DisplayName("금지어가 포함된 상품명은 기존 상품명 가공 흐름에서 제외된다")
     void processProductName_returnsEmpty_whenBlockedWordExists() {
-        // 기존 상품명 전용 가공 흐름에서는 금지어가 포함되면 Optional.empty()를 반환해야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -61,9 +62,8 @@ class ProductProcessingServiceTest {
     }
 
     @Test
-    @DisplayName("치환어가 있으면 기존 상품명 가공 흐름에서 치환어를 적용한다")
+    @DisplayName("치환어가 있으면 기존 상품명 가공 흐름에서 치환어가 적용된다")
     void processProductName_appliesReplacementWords() {
-        // 기존 상품명 전용 가공 흐름에서는 설정된 치환어를 순서대로 적용해야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -88,9 +88,8 @@ class ProductProcessingServiceTest {
     }
 
     @Test
-    @DisplayName("금지어와 치환어가 없으면 기존 상품명 가공 흐름은 원본을 그대로 반환한다")
+    @DisplayName("금지어도 치환어도 없으면 기존 상품명 가공 흐름은 원본을 그대로 반환한다")
     void processProductName_returnsOriginalName_whenNoPolicyMatches() {
-        // 금지어와 치환어가 모두 없으면 입력 상품명을 그대로 반환해야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -114,8 +113,6 @@ class ProductProcessingServiceTest {
     @Test
     @DisplayName("금지어가 포함되면 차단 상태로 저장하고 응답에서는 가격 정보를 비운다")
     void processProduct_returnsBlocked_whenBlockedWordExists() {
-        // processProduct는 번역된 상품명을 기준으로 금지어를 검사한다.
-        // 차단 상품도 더미 등록 DB에는 BLOCKED 상태로 저장되어야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -134,6 +131,8 @@ class ProductProcessingServiceTest {
                 anyString(),
                 anyString(),
                 anyString(),
+                any(List.class),
+                any(List.class),
                 anyString(),
                 anyString(),
                 any(BigDecimal.class),
@@ -160,6 +159,8 @@ class ProductProcessingServiceTest {
                 eq("ASIN-001"),
                 eq("https://www.amazon.com/dp/ASIN-001"),
                 eq("https://image.example/main.jpg"),
+                eq(List.of("https://image.example/detail-1.jpg")),
+                eq(List.of()),
                 eq("금지어 포함 상품"),
                 eq("브랜드"),
                 eq(BigDecimal.valueOf(10)),
@@ -186,8 +187,6 @@ class ProductProcessingServiceTest {
     @Test
     @DisplayName("최소 마진 보호가 꺼져 있으면 목표 마진율 기준으로 판매가를 계산하고 저장한다")
     void processProduct_usesMarginRateOnly_whenMinMarginProtectDisabled() {
-        // 최소 마진 보호가 꺼져 있으면 목표 마진율만 사용해야 한다.
-        // 동시에 register 호출에도 계산된 값이 그대로 전달되어야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -206,6 +205,8 @@ class ProductProcessingServiceTest {
                 anyString(),
                 anyString(),
                 anyString(),
+                any(List.class),
+                any(List.class),
                 anyString(),
                 anyString(),
                 any(BigDecimal.class),
@@ -223,9 +224,6 @@ class ProductProcessingServiceTest {
         ProductProcessingResultResponse result =
                 productProcessingService.processProduct(1L, MarketCode.COUPANG, request);
 
-        // 원가 10달러 * 환율 1,350원 = 13,500원
-        // 목표 마진율 30% = 4,050원
-        // 최소 마진 보호가 꺼져 있으므로 5,000원이 아니라 4,050원을 사용한다.
         assertEquals(BigDecimal.valueOf(13500), result.getCostInKrw());
         assertEquals(BigDecimal.valueOf(20300), result.getSalePrice());
         assertEquals("READY", result.getRegistrationStatus());
@@ -236,6 +234,8 @@ class ProductProcessingServiceTest {
                 eq("ASIN-001"),
                 eq("https://www.amazon.com/dp/ASIN-001"),
                 eq("https://image.example/main.jpg"),
+                eq(List.of("https://image.example/detail-1.jpg")),
+                eq(List.of()),
                 eq("정상 상품"),
                 eq("브랜드"),
                 eq(BigDecimal.valueOf(10)),
@@ -250,9 +250,73 @@ class ProductProcessingServiceTest {
     }
 
     @Test
+    @DisplayName("variation 정보가 있으면 등록 저장 단계로 함께 전달한다")
+    void processProduct_passesVariationListToRegistrationService() {
+        PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
+        ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        ProductProcessingService productProcessingService =
+                new ProductProcessingService(policyQueryService, productRegistrationService);
+
+        PolicyBundle policyBundle = new PolicyBundle(
+                defaultPolicySetting(),
+                List.of(),
+                List.of()
+        );
+
+        when(policyQueryService.getPolicyBundle(1L, MarketCode.COUPANG)).thenReturn(policyBundle);
+        when(productRegistrationService.register(
+                anyLong(),
+                any(),
+                anyString(),
+                anyString(),
+                anyString(),
+                any(List.class),
+                any(List.class),
+                anyString(),
+                anyString(),
+                any(BigDecimal.class),
+                anyString(),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(),
+                any()
+        )).thenReturn(createRegistration(RegistrationStatus.READY, null));
+
+        ProductProcessingRequest request = createRequest("정상 상품", "브랜드", BigDecimal.valueOf(10));
+        List<SourcingVariationResponse> variations = List.of(createVariation("OPT-001"));
+        ReflectionTestUtils.setField(request, "sourcingVariations", variations);
+
+        productProcessingService.processProduct(1L, MarketCode.COUPANG, request);
+
+        ArgumentCaptor<List> variationsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(productRegistrationService).register(
+                eq(1L),
+                eq(MarketCode.COUPANG),
+                eq("ASIN-001"),
+                eq("https://www.amazon.com/dp/ASIN-001"),
+                eq("https://image.example/main.jpg"),
+                eq(List.of("https://image.example/detail-1.jpg")),
+                variationsCaptor.capture(),
+                eq("정상 상품"),
+                eq("브랜드"),
+                eq(BigDecimal.valueOf(10)),
+                eq("USD"),
+                eq(BigDecimal.valueOf(1350)),
+                eq(BigDecimal.valueOf(13500)),
+                eq(BigDecimal.valueOf(13500)),
+                eq(BigDecimal.valueOf(3000)),
+                eq(RegistrationStatus.READY),
+                eq(null)
+        );
+
+        assertEquals(1, variationsCaptor.getValue().size());
+    }
+
+    @Test
     @DisplayName("수수료율 합계가 100퍼센트 이상이면 예외가 발생하고 저장은 수행하지 않는다")
     void processProduct_throwsException_whenTotalFeeRateIsInvalid() {
-        // 판매가 계산이 불가능한 정책이면 register 전에 예외가 발생해야 한다.
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
         ProductProcessingService productProcessingService =
@@ -268,7 +332,6 @@ class ProductProcessingServiceTest {
 
         ProductProcessingRequest request = createRequest("정상 상품", "브랜드", BigDecimal.valueOf(10));
 
-        // when & then
         assertThrows(IllegalArgumentException.class,
                 () -> productProcessingService.processProduct(1L, MarketCode.COUPANG, request));
 
@@ -278,6 +341,8 @@ class ProductProcessingServiceTest {
                 anyString(),
                 anyString(),
                 anyString(),
+                any(List.class),
+                any(List.class),
                 anyString(),
                 anyString(),
                 any(BigDecimal.class),
@@ -365,7 +430,6 @@ class ProductProcessingServiceTest {
     }
 
     private ProductProcessingRequest createRequest(String translatedProductName, String translatedBrand, BigDecimal originalPrice) {
-        // ProductProcessingRequest는 setter가 없어서 테스트에서 ReflectionTestUtils로 필드를 채운다.
         ProductProcessingRequest request = new ProductProcessingRequest();
         ReflectionTestUtils.setField(request, "sourceProductId", "ASIN-001");
         ReflectionTestUtils.setField(request, "sourceUrl", "https://www.amazon.com/dp/ASIN-001");
@@ -375,11 +439,23 @@ class ProductProcessingServiceTest {
         ReflectionTestUtils.setField(request, "currency", "USD");
         ReflectionTestUtils.setField(request, "mainImageUrl", "https://image.example/main.jpg");
         ReflectionTestUtils.setField(request, "descriptionImageUrls", List.of("https://image.example/detail-1.jpg"));
+        ReflectionTestUtils.setField(request, "sourcingVariations", List.of());
         return request;
     }
 
+    private SourcingVariationResponse createVariation(String asin) {
+        SourcingVariationResponse variation = new SourcingVariationResponse();
+        ReflectionTestUtils.setField(variation, "asin", asin);
+        ReflectionTestUtils.setField(variation, "dimensions", Map.of("Color", "Red"));
+        ReflectionTestUtils.setField(variation, "selected", true);
+        ReflectionTestUtils.setField(variation, "price", BigDecimal.valueOf(11));
+        ReflectionTestUtils.setField(variation, "currency", "USD");
+        ReflectionTestUtils.setField(variation, "stock", "In Stock");
+        ReflectionTestUtils.setField(variation, "images", List.of("https://image.example/option-red.jpg"));
+        return variation;
+    }
+
     private DummyProductRegistration createRegistration(RegistrationStatus registrationStatus, String exclusionReason) {
-        // 서비스 mock이 반환할 더미 등록 엔티티를 만든다.
         return DummyProductRegistration.create(
                 1L,
                 MarketCode.COUPANG,

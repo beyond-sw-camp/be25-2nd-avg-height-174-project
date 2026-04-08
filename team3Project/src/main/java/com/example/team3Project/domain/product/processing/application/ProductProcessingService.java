@@ -177,6 +177,8 @@ public class ProductProcessingService {
                         request.getSourceProductId(),
                         request.getSourceUrl(),
                         request.getMainImageUrl(),
+                        request.getDescriptionImageUrls(),
+                        request.getSourcingVariations(),
                         processedProductName,
                         processedBrand,
                         request.getOriginalPrice(),

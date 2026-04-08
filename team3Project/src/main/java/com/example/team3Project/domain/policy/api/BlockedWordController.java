@@ -4,6 +4,8 @@ import com.example.team3Project.domain.policy.application.BlockedWordService;
 import com.example.team3Project.domain.policy.dto.BlockedWordCreateRequest;
 import com.example.team3Project.domain.policy.dto.BlockedWordResponse;
 import com.example.team3Project.domain.policy.dto.BlockedWordUpdateRequest;
+import com.example.team3Project.domain.user.User;
+import com.example.team3Project.global.annotation.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,67 +21,68 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController // JSON 응답을 반환한다. REST API용 컨트롤러
+@RestController
 @RequiredArgsConstructor
-@RequestMapping("/policies/blocked-words")      // 컨트롤러의 기본 URL 경로
+@RequestMapping("/policies/blocked-words")
 public class BlockedWordController {
-    // 서비스 클래스 주입 - 비즈니스 로직은 해당 서비스 클래스에서 진행한다.
-    private final BlockedWordService blockedWordService;
 
+    private final BlockedWordService blockedWordService;
 
     @PostMapping("/post-test/{id}")
     public int postTest(@PathVariable int id) {
         return id;
     }
 
-    // Post 요청을 처리한다. - 금지어 등록
+    // POST 요청을 처리한다. - 금지어 등록
     @PostMapping
     public ResponseEntity<BlockedWordResponse> createBlockedWord(
-            @RequestParam Long userId,  // 아직 인증 기능 X -> 어떤 사용자의 금지어인지 URL 파라미터로 받는다.
-            // @RequestBody - RequestBody의 JSON을 DTO로 받는다.
-            // @Valid - DTO 검증 (여기서는 금지어 문자열이 @NOTNULL인지 확인한다.)
+            @RequestParam Long userId,
             @Valid @RequestBody BlockedWordCreateRequest request) {
-        // 서비스 클래스에게 금지어 등록을 맡긴 후 저장한 엔터티의 응답 DTO를 받는다.
         BlockedWordResponse response = blockedWordService.createBlockedWord(userId, request);
-        // 응답 DTO를 HTTP OK 응답으로 클라이언트에게 돌려준다.
         return ResponseEntity.ok(response);
     }
 
     // GET 요청을 처리한다. - 사용자의 금지어 목록 전체 조회
     @GetMapping
     public ResponseEntity<List<BlockedWordResponse>> getBlockedWords(
-            @RequestParam Long userId // 아직 인증 기능 X -> 어떤 사용자의 금지어인지 URL 파라미터로 받는다.
+            @RequestParam Long userId
     ) {
-        // 서비스에게 특정 사용자의 금지어 목록 조회를 맡긴 후 조회된 목록을 받아온다.
         List<BlockedWordResponse> response = blockedWordService.getBlockedWords(userId);
-        // 조회된 목록을 200 OK 응답으로 돌려준다.
         return ResponseEntity.ok(response);
     }
 
+    // sourcing의 GET 요청 처리 - 사용자 기준 금지어 문자열 리스트 제공
+    @GetMapping("/sourcing")
+    public ResponseEntity<List<String>> getBlockedWordsForSourcing(@LoginUser User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<String> response = blockedWordService.getBlockedWords(user.getId())
+                .stream()
+                .map(BlockedWordResponse::getBlockedWord)
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
 
     // DELETE 요청을 처리한다. - 금지어 삭제
     @DeleteMapping("/{userBlockedWordId}")
     public ResponseEntity<Void> deleteBlockedWord(
-            @PathVariable Long userBlockedWordId,  // URL 경로에 들어있는 금지어 ID를 받는다.
-            @RequestParam Long userId    // 웹 요청 파라미터를 메서드 파라미터에 바인딩한다. - 어느 사용자의 요청인지 쿼리 파라미터로 받음
+            @PathVariable Long userBlockedWordId,
+            @RequestParam Long userId
     ) {
-        // 서비스에서 삭제 로직을 돌린다.
         blockedWordService.deleteBlockedWord(userId, userBlockedWordId);
         return ResponseEntity.noContent().build();
-        // Http 상태 코드 - 204(noContent)
-        // 응답 body는 따로 보내지 않는다.
     }
 
     // PUT 요청을 처리한다. - 금지어 수정
     @PutMapping("/{userBlockedWordId}")
     public ResponseEntity<BlockedWordResponse> updateBlockedWord(
-            @PathVariable Long userBlockedWordId,       // URL 경로에 있는 금지어 ID를 받는다.
-            @RequestParam Long userId,                  // 어느 사용자의 요청인지 파라미터로 받음
-            @Valid @RequestBody BlockedWordUpdateRequest request    // JSON을 update dto 로 받는다.
-    ){
-        // 서비스에서 금지어 수정 로직을 처리한다.
+            @PathVariable Long userBlockedWordId,
+            @RequestParam Long userId,
+            @Valid @RequestBody BlockedWordUpdateRequest request
+    ) {
         BlockedWordResponse response = blockedWordService.updateBlockedWord(userId, userBlockedWordId, request);
-        // 수정 결과를 응답으로 보내준다.
         return ResponseEntity.ok(response);
     }
 

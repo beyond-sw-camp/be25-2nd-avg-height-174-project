@@ -1,15 +1,15 @@
 package com.example.team3Project.domain.user;
 
-import com.example.team3Project.domain.user.dto.PasswordChangeRequest;
 import com.example.team3Project.domain.user.dto.LoginRequest;
-import com.example.team3Project.domain.user.dto.SessionUser;
+import com.example.team3Project.domain.user.dto.PasswordChangeRequest;
 import com.example.team3Project.domain.user.dto.SignupRequest;
 import com.example.team3Project.domain.user.dto.UserUpdateFormRequest;
 import com.example.team3Project.domain.user.dto.UserWithdrawRequest;
 import com.example.team3Project.global.annotation.LoginUser;
 import com.example.team3Project.global.exception.LoginException;
-import com.example.team3Project.global.util.SessionUtils;
-import jakarta.servlet.http.HttpServletRequest;
+import com.example.team3Project.global.jwt.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/users")
 public class UserController {
 
+    private static final String ACCESS_TOKEN_COOKIE = "token";
+    private static final int ACCESS_TOKEN_MAX_AGE = 60 * 60 * 2;
+
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @GetMapping("/login")
     public String loginForm(@RequestParam(defaultValue = "/") String redirectURL,
@@ -44,7 +48,7 @@ public class UserController {
     public String login(@Valid @ModelAttribute LoginRequest loginRequest,
                         BindingResult bindingResult,
                         @RequestParam(defaultValue = "/") String redirectURL,
-                        HttpServletRequest request,
+                        HttpServletResponse response,
                         Model model) {
 
         if (bindingResult.hasErrors()) {
@@ -54,14 +58,10 @@ public class UserController {
 
         try {
             User loginUser = userService.login(loginRequest);
-            SessionUtils.setLoginUser(
-                    request,
-                    new SessionUser(
-                            loginUser.getId(),
-                            loginUser.getUsername(),
-                            loginUser.getNickname()
-                    )
-            );
+
+            // 로그인에 성공한 사용자의 핵심 정보를 담아 Gateway가 검증할 access token을 발급한다.
+            String accessToken = jwtUtil.createAccessToken(loginUser);
+            addAccessTokenCookie(response, accessToken);
 
             log.info("로그인 성공: userId={}, redirectURL={}", loginUser.getId(), redirectURL);
             return "redirect:" + redirectURL;
@@ -101,8 +101,9 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public String logout(HttpServletRequest request) {
-        SessionUtils.invalidateSession(request);
+    public String logout(HttpServletResponse response) {
+        // 로그아웃 시에는 서버 세션을 지우는 대신 브라우저의 access token 쿠키를 만료시킨다.
+        expireAccessTokenCookie(response);
         log.info("로그아웃 완료");
         return "redirect:/users/login";
     }
@@ -169,7 +170,7 @@ public class UserController {
     public String delete(@LoginUser User user,
                          @Valid @ModelAttribute("withdrawRequest") UserWithdrawRequest withdrawRequest,
                          BindingResult bindingResult,
-                         HttpServletRequest request,
+                         HttpServletResponse response,
                          Model model) {
         if (user == null) {
             return "redirect:/users/login";
@@ -181,7 +182,8 @@ public class UserController {
 
         try {
             userService.deleteUser(user.getId(), withdrawRequest.getPassword());
-            SessionUtils.invalidateSession(request);
+            // 회원 탈퇴 후에는 기존 로그인 토큰도 더 이상 사용할 수 없도록 즉시 만료시킨다.
+            expireAccessTokenCookie(response);
             log.info("회원 탈퇴 완료: userId={}", user.getId());
             return "redirect:/users/login";
         } catch (IllegalArgumentException e) {
@@ -192,15 +194,15 @@ public class UserController {
 
     @PostMapping("/update/password")
     public String changePassword(@LoginUser User user,
-                                  @Valid @ModelAttribute("passwordChangeRequest") PasswordChangeRequest passwordRequest,
-                                  BindingResult bindingResult,
-                                  @ModelAttribute("userForm") UserUpdateFormRequest userForm,
-                                  Model model) {
+                                 @Valid @ModelAttribute("passwordChangeRequest") PasswordChangeRequest passwordRequest,
+                                 BindingResult bindingResult,
+                                 @ModelAttribute("userForm") UserUpdateFormRequest userForm,
+                                 Model model) {
         if (user == null) {
             return "redirect:/users/login";
         }
 
-        // 새 비밀번호 일치 확인
+        // 새 비밀번호와 확인 비밀번호가 일치하는지 먼저 검사한다.
         if (!passwordRequest.getNewPassword().equals(passwordRequest.getConfirmPassword())) {
             bindingResult.rejectValue("confirmPassword", "passwordMismatch", "새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
         }
@@ -222,6 +224,7 @@ public class UserController {
 
         return "users/update";
     }
+
     @GetMapping("/find-id")
     public String findIdForm() {
         return "users/find-id";
@@ -254,5 +257,22 @@ public class UserController {
             model.addAttribute("errorMessage", e.getMessage());
         }
         return "users/reset-pw";
+    }
+
+    private void addAccessTokenCookie(HttpServletResponse response, String accessToken) {
+        // Gateway 필터가 같은 이름의 쿠키를 읽어 JWT를 검증하므로 token 쿠키로 내려준다.
+        Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE, accessToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(ACCESS_TOKEN_MAX_AGE);
+        response.addCookie(cookie);
+    }
+
+    private void expireAccessTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE, "");
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 }

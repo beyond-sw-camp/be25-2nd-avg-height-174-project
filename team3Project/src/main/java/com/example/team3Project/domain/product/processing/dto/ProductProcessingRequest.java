@@ -48,9 +48,13 @@ public class ProductProcessingRequest {
     @NotEmpty
     private List<String> descriptionImageUrls;
 
+    // 소싱 variation 원본을 함께 보관해 두고 등록 저장 단계에서 옵션/이미지 엔티티 생성에 사용한다.
+    private List<SourcingVariationResponse> sourcingVariations;
+
     // 소싱 서비스 응답을 받아서 가공 흐름으로 넘길 때 사용할 객체
     // 정적 팩토리 메서드 - 클래스가 자기 자신을 만들어서 반환하는 static 메서드
     // 생성자 로직을 숨길 수 있음
+    // 외부 소싱 payload를 내부 가공 서비스가 기대하는 입력 형식으로 맞출 때 사용한다.
     public static ProductProcessingRequest of(
             String sourceProductId,
             String sourceUrl,
@@ -61,6 +65,30 @@ public class ProductProcessingRequest {
             String mainImageUrl,
             List<String> descriptionImageUrls
     ) {
+        return of(
+                sourceProductId,
+                sourceUrl,
+                translatedProductName,
+                translatedBrand,
+                originalPrice,
+                currency,
+                mainImageUrl,
+                descriptionImageUrls,
+                List.of()
+        );
+    }
+
+    public static ProductProcessingRequest of(
+            String sourceProductId,
+            String sourceUrl,
+            String translatedProductName,
+            String translatedBrand,
+            BigDecimal originalPrice,
+            String currency,
+            String mainImageUrl,
+            List<String> descriptionImageUrls,
+            List<SourcingVariationResponse> sourcingVariations
+    ) {
         ProductProcessingRequest request = new ProductProcessingRequest();
         request.sourceProductId = sourceProductId;
         request.sourceUrl = sourceUrl;
@@ -70,6 +98,7 @@ public class ProductProcessingRequest {
         request.currency = currency;
         request.mainImageUrl = mainImageUrl;
         request.descriptionImageUrls = descriptionImageUrls;
+        request.sourcingVariations = sourcingVariations != null ? sourcingVariations : List.of();
         return request;
     }
 }

@@ -2,9 +2,7 @@ package com.example.team3Project.global.resolver;
 
 import com.example.team3Project.domain.user.User;
 import com.example.team3Project.domain.user.UserService;
-import com.example.team3Project.domain.user.dto.SessionUser;
 import com.example.team3Project.global.annotation.LoginUser;
-import com.example.team3Project.global.util.SessionUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +17,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 @Component
 @RequiredArgsConstructor
 public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
+
+    private static final String USER_ID_HEADER = "X-User-Id";
 
     private final UserService userService;
 
@@ -35,12 +35,21 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
                                   NativeWebRequest webRequest,
                                   WebDataBinderFactory binderFactory) {
         HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
-        SessionUser sessionUser = SessionUtils.getLoginUser(request);
 
-        if (sessionUser == null) {
+        // Gateway가 JWT 검증에 성공하면 현재 서비스로 사용자 식별 헤더를 내려준다.
+        String userIdHeader = request.getHeader(USER_ID_HEADER);
+        if (userIdHeader == null || userIdHeader.isBlank()) {
             return null;
         }
 
-        return userService.findById(sessionUser.getId()).orElse(null);
+        Long userId;
+        try {
+            userId = Long.valueOf(userIdHeader);
+        } catch (NumberFormatException e) {
+            log.warn("잘못된 X-User-Id 헤더 값: {}", userIdHeader);
+            return null;
+        }
+
+        return userService.findById(userId).orElse(null);
     }
 }

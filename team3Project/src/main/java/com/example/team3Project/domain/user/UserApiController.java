@@ -7,9 +7,8 @@ import com.example.team3Project.domain.user.dto.UserResponse;
 import com.example.team3Project.domain.user.dto.UserUpdateRequest;
 import com.example.team3Project.domain.user.dto.UserWithdrawRequest;
 import com.example.team3Project.global.annotation.LoginUser;
-import com.example.team3Project.global.exception.LoginException;
-import com.example.team3Project.global.util.SessionUtils;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/user")
 public class UserApiController {
+
+    private static final String ACCESS_TOKEN_COOKIE = "token";
 
     private final UserService userService;
 
@@ -55,8 +56,9 @@ public class UserApiController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        SessionUtils.invalidateSession(request);
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        // REST 로그아웃도 MVC와 같은 방식으로 JWT 쿠키를 만료시킨다.
+        expireAccessTokenCookie(response);
         log.info("로그아웃 완료");
         return ResponseEntity.ok().build();
     }
@@ -73,7 +75,7 @@ public class UserApiController {
     public ResponseEntity<UserResponse> updateUser(
             @LoginUser User user,
             @Valid @RequestBody UserUpdateRequest request) {
-        
+
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
@@ -86,15 +88,24 @@ public class UserApiController {
     public ResponseEntity<Void> deleteUser(
             @LoginUser User user,
             @Valid @RequestBody UserWithdrawRequest request,
-            HttpServletRequest httpRequest) {
-        
+            HttpServletResponse response) {
+
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
 
         userService.deleteUser(user.getId(), request.getPassword());
-        SessionUtils.invalidateSession(httpRequest);
-        log.info("회원 탈퇴 및 세션 무효화: userId={}", user.getId());
+        // 회원 탈퇴 후에는 남아 있는 access token 쿠키도 즉시 제거한다.
+        expireAccessTokenCookie(response);
+        log.info("회원 탈퇴 완료: userId={}", user.getId());
         return ResponseEntity.ok().build();
+    }
+
+    private void expireAccessTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE, "");
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 }

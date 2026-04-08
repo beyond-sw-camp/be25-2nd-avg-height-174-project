@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,26 +21,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProductProcessingController {
 
-    // ProductProcessingService로 비즈니스 로직을 실행할 수 있도록 의존성 주입
+    // 상품 가공 비즈니스 로직은 서비스에서 수행하고, 컨트롤러는 요청을 받아 전달하는 역할만 맡는다.
     private final ProductProcessingService productProcessingService;
     private final SourcingProductMapper sourcingProductMapper;
 
     @PostMapping("/products/processing/name")
-    // 상품명 가공 메서드
+    // 상품명만 먼저 가공해 보는 수동 호출 API
     public ResponseEntity<ProductNameProcessingResponse> processProductName(
             @RequestParam Long userId,
             @RequestParam MarketCode marketCode,
             @Valid @RequestBody ProductNameProcessingRequest request
     ) {
-        // 서비스에서 상품명 가공 로직을 실행함
         ProductNameProcessingResponse response =
                 productProcessingService.processProductNameResponse(userId, marketCode, request.getProductName());
 
         return ResponseEntity.ok(response);
     }
 
-    // 상품 가공 메서드
     @PostMapping("/products/processing")
+    // 상품 1건 전체를 수동으로 가공하는 API
     public ResponseEntity<ProductProcessingResultResponse> processProduct(
             @RequestParam Long userId,
             @RequestParam MarketCode marketCode,
@@ -50,17 +49,19 @@ public class ProductProcessingController {
                 productProcessingService.processProduct(userId, marketCode, request);
 
         return ResponseEntity.ok(response);
-
     }
 
-    // 소싱 완료 요청 API
     @PostMapping("/api/sourcing/ingest")
+    // 소싱 서비스가 상품 수집과 번역을 끝낸 뒤 내부적으로 호출하는 ingest 수신 API
     public ResponseEntity<ProductProcessingResultResponse> ingestSourcingProduct(
+            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody SourcingCompletedRequest request
     ) {
+        // 소싱 완료 요청 DTO를 현재 가공 서비스가 사용하는 내부 가공 요청 DTO로 변환한다.
         ProductProcessingRequest processingRequest = sourcingProductMapper.toProcessingRequest(request);
         ProductProcessingResultResponse response =
-                productProcessingService.processProduct(request.getUserId(), request.getMarketCode(), processingRequest);
+                // 사용자 식별은 payload 가 아니라 헤더의 X-User-Id 를 기준으로 정책 조회와 등록 저장을 수행한다.
+                productProcessingService.processProduct(userId, request.getMarketCode(), processingRequest);
 
         return ResponseEntity.ok(response);
     }

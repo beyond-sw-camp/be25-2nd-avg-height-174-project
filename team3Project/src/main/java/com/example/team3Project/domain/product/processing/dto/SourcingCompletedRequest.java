@@ -17,10 +17,8 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+// 소싱 서비스가 상품 수집과 번역을 마친 뒤 가공 서비스로 보내는 내부 전달 요청 DTO이다.
 public class SourcingCompletedRequest {
-
-    @NotNull
-    private Long userId;
 
     @NotNull
     private MarketCode marketCode;
@@ -58,6 +56,8 @@ public class SourcingCompletedRequest {
     @JsonProperty("images")
     private List<String> images;
 
+    // variation 은 옵션별 가격, 재고, 이미지가 달라질 수 있으므로 별도 목록으로 받는다.
+    // 이후 등록 저장 단계에서 DummyProductOption, DummyProductImage 구조로 이어질 수 있는 원본 데이터다.
     @Valid
     @NotNull
     @JsonProperty("variation")
