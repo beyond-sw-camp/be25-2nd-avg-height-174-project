@@ -11,8 +11,10 @@ import com.example.team3Project.domain.product.registration.entity.RegistrationS
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -22,7 +24,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional
-// 등록 저장 전용 서비스
 public class ProductRegistrationService {
 
     private final DummyProductRegistrationRepository dummyProductRegistrationRepository;
@@ -65,25 +66,23 @@ public class ProductRegistrationService {
                 exclusionReason
         );
 
-        // 소싱 variation 원본을 현재 더미 등록의 옵션 엔티티 목록으로 바꿔서 저장한다.
         registration.replaceOptions(toDummyOptions(sourcingVariations));
-        // 대표 이미지, 설명 이미지, 옵션 이미지를 하나의 이미지 컬렉션으로 모아 저장한다.
         registration.replaceImages(toDummyImages(mainImageUrl, descriptionImageUrls, sourcingVariations));
 
         return dummyProductRegistrationRepository.save(registration);
     }
 
-    // 사용자/마켓별 등록 목록 조회용 메서드
-    @Transactional(readOnly = true)
     public List<DummyProductRegistration> getRegistrations(Long userId, MarketCode marketCode) {
         return dummyProductRegistrationRepository.findByUserIdAndMarketCode(userId, marketCode);
     }
 
-    // 사용자/마켓별 등록 단건 조회용 메서드
-    @Transactional(readOnly = true)
-    public DummyProductRegistration getRegistration(Long registrationId) {
-        return dummyProductRegistrationRepository.findById(registrationId)
-                .orElseThrow(() -> new IllegalArgumentException("등록 상품을 찾을 수 없습니다. id=" + registrationId));
+    public DummyProductRegistration getRegistration(Long userId, Long registrationId) {
+        // 단건 조회도 현재 로그인 사용자의 소유 데이터만 반환한다.
+        return dummyProductRegistrationRepository.findByDummyProductRegistrationIdAndUserId(registrationId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "등록 상품을 찾을 수 없습니다. id=" + registrationId
+                ));
     }
 
     private List<DummyProductOption> toDummyOptions(List<SourcingVariationResponse> sourcingVariations) {
@@ -92,6 +91,7 @@ public class ProductRegistrationService {
             return options;
         }
 
+        // variation 원본을 더미 등록용 옵션 엔티티 목록으로 변환한다.
         for (SourcingVariationResponse variation : sourcingVariations) {
             options.add(
                     DummyProductOption.create(
@@ -101,7 +101,6 @@ public class ProductRegistrationService {
                             variation.getPrice(),
                             variation.getCurrency(),
                             variation.getStock(),
-                            // 평점과 리뷰 수는 현재 저장 범위에서 제외하고 이후 확장 대상으로 남겨 둔다.
                             null,
                             null
                     )
@@ -115,6 +114,7 @@ public class ProductRegistrationService {
             List<String> descriptionImageUrls,
             List<SourcingVariationResponse> sourcingVariations
     ) {
+        // 대표/설명/옵션 이미지를 한 컬렉션으로 모아 등록 엔티티에 저장한다.
         List<DummyProductImage> images = new ArrayList<>();
 
         if (mainImageUrl != null && !mainImageUrl.isBlank()) {

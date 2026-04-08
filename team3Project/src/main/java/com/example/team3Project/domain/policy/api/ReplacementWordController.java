@@ -4,6 +4,8 @@ import com.example.team3Project.domain.policy.application.ReplacementWordService
 import com.example.team3Project.domain.policy.dto.ReplacementWordCreateRequest;
 import com.example.team3Project.domain.policy.dto.ReplacementWordResponse;
 import com.example.team3Project.domain.policy.dto.ReplacementWordUpdateRequest;
+import com.example.team3Project.domain.user.User;
+import com.example.team3Project.global.annotation.LoginUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -24,49 +25,58 @@ import java.util.List;
 @RequestMapping("/policies/replacement-words")
 public class ReplacementWordController {
 
+    // 치환어도 사용자별 정책 데이터이므로 로그인 사용자 기준으로만 다룬다.
     private final ReplacementWordService replacementWordService;
 
-    // 치환어 등록
     @PostMapping
     public ResponseEntity<ReplacementWordResponse> createReplacementWord(
-            @RequestParam Long userId,
-            // ReplacementWordCreateRequest : 등록 요청 JSON을 받는 DTO
+            @LoginUser User user,
             @Valid @RequestBody ReplacementWordCreateRequest request
-    ){
-        // ReplacementWordResponse : 등록 결과와 조회 결과를 응답으로 내려주는 DTO
-        // replacementWordService의 치환어 등록 메서드를 호출하여 해당 로직을 실행한다.
-        ReplacementWordResponse response = replacementWordService.createReplacementWord(userId, request);
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        ReplacementWordResponse response =
+                replacementWordService.createReplacementWord(user.getId(), request);
         return ResponseEntity.ok(response);
     }
 
-    // 치환어 조회
     @GetMapping
-    public ResponseEntity<Object> getReplacementWords(@RequestParam Long userId){
-        // replacementWordService의 치환어 조회 메서드를 호출하여 해당 로직을 실행한다.
-        List<ReplacementWordResponse> response = replacementWordService.getReplacementWords(userId);
+    public ResponseEntity<List<ReplacementWordResponse>> getReplacementWords(@LoginUser User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<ReplacementWordResponse> response = replacementWordService.getReplacementWords(user.getId());
         return ResponseEntity.ok(response);
     }
 
-    // 치환어 삭제
-    // @RequestParam : URL 쿼리 파라미터
-    // @PathVariable : URL 경로 자체에 들어 있는 값 - URL 경로 중 일부를 변수처럼 사용, 특정 리소스의 ID를 받을 때 사용
-    // {userReplacementWordId}에 PathVariable인 userReplacementWordId에 대입할 값이 들어온다.
     @DeleteMapping("/{userReplacementWordId}")
-    public ResponseEntity<Void> deleteReplacementWord(@PathVariable Long userReplacementWordId, @RequestParam Long userId){
-        // replacementWordService의 치환어 삭제 메서드를 호출하여 해당 로직을 실행한다.
-        replacementWordService.deleteReplacementWord(userId, userReplacementWordId);
+    public ResponseEntity<Void> deleteReplacementWord(
+            @LoginUser User user,
+            @PathVariable Long userReplacementWordId
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        replacementWordService.deleteReplacementWord(user.getId(), userReplacementWordId);
         return ResponseEntity.noContent().build();
     }
 
-    // 치환어 수정
     @PutMapping("/{userReplacementWordId}")
     public ResponseEntity<ReplacementWordResponse> updateReplacementWord(
+            @LoginUser User user,
             @PathVariable Long userReplacementWordId,
-            @RequestParam Long userId,
             @Valid @RequestBody ReplacementWordUpdateRequest request
-    ){
-        // replacementWordService의 치환어 수정 메서드를 호출하여 해당 로직을 실행한다.
-        ReplacementWordResponse response = replacementWordService.updateReplacementWord(userId, userReplacementWordId, request);
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        ReplacementWordResponse response =
+                replacementWordService.updateReplacementWord(user.getId(), userReplacementWordId, request);
         return ResponseEntity.ok(response);
     }
 }
