@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,11 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "dummy_product_registration")
+@Table(
+        name = "dummy_product_registration",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_dummy_registration_user_market_source",
+                columnNames = {"user_id", "market_code", "source_product_id"}
+        )
+)
 @Getter
 @NoArgsConstructor
-// 더미 - 상품 등록 엔터티
-// 상품 1건
+// 더미 상품 등록 엔티티
 public class DummyProductRegistration {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,21 +84,14 @@ public class DummyProductRegistration {
     @Column(name = "exclusion_reason")
     private String exclusionReason;
 
-    // 객체를 JSON으로 바꿀 때 생기는 순환참조 문제를 해결하기 위한 어노테이션
-    // JSON에 작성이 된다.
     @JsonManagedReference("registration-options")
-    // 1: N관계(registration 1개가 여러개의 registrationOption을 갖는다.)
     @OneToMany(mappedBy = "registration", cascade = CascadeType.ALL, orphanRemoval = true)
-    // 소싱 요청의 variation 목록을 등록 상품의 옵션 목록으로 저장한다.
     private List<DummyProductOption> options = new ArrayList<>();
 
     @JsonManagedReference("registration-images")
-    // 1: N관계(registration 1개가 여러개의 registrationImage를 갖는다.)
     @OneToMany(mappedBy = "registration", cascade = CascadeType.ALL, orphanRemoval = true)
-    // 대표 이미지와 옵션 이미지를 함께 보관하고 enum으로 구분할 수 있게 한다.
     private List<DummyProductImage> images = new ArrayList<>();
 
-    // 상품 1건 더미 등록 시 객체 생성
     public static DummyProductRegistration create(
             Long userId,
             MarketCode marketCode,
@@ -129,7 +128,7 @@ public class DummyProductRegistration {
         return registration;
     }
 
-    // 더미 상품 1건 수정
+    // 동일 상품이 다시 들어오면 기존 등록 건을 갱신한다.
     public void update(
             String sourceUrl,
             String mainImageUrl,
@@ -158,25 +157,28 @@ public class DummyProductRegistration {
         this.exclusionReason = exclusionReason;
     }
 
-    // 상품 1건 옵션 수정
     public void replaceOptions(List<DummyProductOption> options) {
-        this.options.clear(); // options 리스트의 요소를 전부 비운다.
-        options.forEach(this::addOption); // 새 options에 연관관계를 부여한다.
+        this.options.clear();
+        options.forEach(this::addOption);
     }
 
-    // 상품 1건 이미지 수정
     public void replaceImages(List<DummyProductImage> images) {
-        this.images.clear(); // images 리스트의 요소를 전부 비운다.
-        images.forEach(this::addImage); // 새 images에 연관관계를 부여한다.
+        this.images.clear();
+        images.forEach(this::addImage);
     }
 
     public void addOption(DummyProductOption option) {
-        option.assignRegistration(this); // 옵션을 현재 상품 등록 건에 소속시킨다.
-        this.options.add(option); // option 리스트에 추가
+        option.assignRegistration(this);
+        this.options.add(option);
     }
 
     public void addImage(DummyProductImage image) {
-        image.assignRegistration(this); // 이미지를 현재 상품 등록 건에 소속시킨다.
-        this.images.add(image); // 이미지 리스트에 추가
+        image.assignRegistration(this);
+        this.images.add(image);
+    }
+
+    // 더미 마켓 발행이 끝난 등록 후보를 등록 완료 상태로 바꾼다.
+    public void markRegistered() {
+        this.registrationStatus = RegistrationStatus.REGISTERED;
     }
 }

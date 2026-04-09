@@ -2,13 +2,17 @@ package com.example.team3Project.domain.product.registration.api;
 
 import com.example.team3Project.domain.policy.entity.MarketCode;
 import com.example.team3Project.domain.product.registration.application.ProductRegistrationService;
+import com.example.team3Project.domain.product.registration.dto.DummyProductRegistrationDeleteRequest;
 import com.example.team3Project.domain.product.registration.entity.DummyProductRegistration;
 import com.example.team3Project.domain.user.User;
 import com.example.team3Project.global.annotation.LoginUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,9 +24,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DummyProductRegistrationController {
 
-    // 등록 상품 조회 API도 현재 로그인 사용자의 데이터만 대상으로 한다.
+    // 등록 상품 조회/삭제 API도 현재 로그인 사용자의 데이터만 대상으로 한다.
     private final ProductRegistrationService productRegistrationService;
 
+    // 등록 상품 목록을 로그인 사용자와 마켓 코드 기준으로 조회한다.
     @GetMapping
     public ResponseEntity<List<DummyProductRegistration>> getRegistrations(
             @LoginUser User user,
@@ -38,6 +43,7 @@ public class DummyProductRegistrationController {
         return ResponseEntity.ok(registrations);
     }
 
+    // 등록 상품 단건을 로그인 사용자 소유 기준으로 조회한다.
     @GetMapping("/{registrationId}")
     public ResponseEntity<DummyProductRegistration> getRegistration(
             @LoginUser User user,
@@ -51,5 +57,33 @@ public class DummyProductRegistrationController {
                 productRegistrationService.getRegistration(user.getId(), registrationId);
 
         return ResponseEntity.ok(registration);
+    }
+
+    // 등록 상품 1건을 로그인 사용자 소유 기준으로 삭제한다.
+    @DeleteMapping("/{registrationId}")
+    public ResponseEntity<Void> deleteRegistration(
+            @LoginUser User user,
+            @PathVariable Long registrationId
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        productRegistrationService.deleteRegistration(user.getId(), registrationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 체크박스로 선택한 등록 상품 여러 건을 한 번에 삭제한다.
+    @DeleteMapping
+    public ResponseEntity<Void> deleteRegistrations(
+            @LoginUser User user,
+            @Valid @RequestBody DummyProductRegistrationDeleteRequest request
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        productRegistrationService.deleteRegistrations(user.getId(), request.getRegistrationIds());
+        return ResponseEntity.noContent().build();
     }
 }

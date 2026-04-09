@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,22 +50,8 @@ class DummyProductRegistrationControllerTest {
     @DisplayName("등록 목록 조회 API는 로그인 사용자와 마켓 코드에 맞는 목록을 반환한다")
     void getRegistrations_returnsRegistrationList() throws Exception {
         List<DummyProductRegistration> registrations = List.of(
-                createRegistration(
-                        1L,
-                        "ASIN-001",
-                        "첫 번째 상품",
-                        RegistrationStatus.READY,
-                        null,
-                        BigDecimal.valueOf(20100)
-                ),
-                createRegistration(
-                        2L,
-                        "ASIN-002",
-                        "두 번째 상품",
-                        RegistrationStatus.BLOCKED,
-                        "BLOCKED_WORD",
-                        BigDecimal.ZERO
-                )
+                createRegistration(1L, "ASIN-001", "첫 번째 상품", RegistrationStatus.READY, null, BigDecimal.valueOf(20100)),
+                createRegistration(2L, "ASIN-002", "두 번째 상품", RegistrationStatus.BLOCKED, "BLOCKED_WORD", BigDecimal.ZERO)
         );
 
         when(productRegistrationService.getRegistrations(1L, MarketCode.COUPANG))
@@ -137,6 +124,70 @@ class DummyProductRegistrationControllerTest {
                 .build();
 
         unauthorizedMockMvc.perform(get("/products/registrations/10"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(productRegistrationService);
+    }
+
+    @Test
+    @DisplayName("등록 삭제 API는 로그인 사용자 소유 상품만 삭제한다")
+    void deleteRegistration_deletesOwnedRegistration() throws Exception {
+        mockMvc.perform(delete("/products/registrations/10"))
+                .andExpect(status().isNoContent());
+
+        verify(productRegistrationService).deleteRegistration(1L, 10L);
+    }
+
+    @Test
+    @DisplayName("등록 삭제 API는 로그인 사용자가 없으면 401을 반환한다")
+    void deleteRegistration_returnsUnauthorized_whenNoLoginUser() throws Exception {
+        DummyProductRegistrationController controller =
+                new DummyProductRegistrationController(productRegistrationService);
+        MockMvc unauthorizedMockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new LoginUserTestArgumentResolver(null))
+                .build();
+
+        unauthorizedMockMvc.perform(delete("/products/registrations/10"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(productRegistrationService);
+    }
+
+    @Test
+    @DisplayName("등록 다건 삭제 API는 선택한 상품 목록을 한 번에 삭제한다")
+    void deleteRegistrations_deletesSelectedRegistrations() throws Exception {
+        mockMvc.perform(
+                        delete("/products/registrations")
+                                .contentType("application/json")
+                                .content("""
+                                        {
+                                          "registrationIds": [10, 11, 12]
+                                        }
+                                        """)
+                )
+                .andExpect(status().isNoContent());
+
+        verify(productRegistrationService).deleteRegistrations(1L, List.of(10L, 11L, 12L));
+    }
+
+    @Test
+    @DisplayName("등록 다건 삭제 API는 로그인 사용자가 없으면 401을 반환한다")
+    void deleteRegistrations_returnsUnauthorized_whenNoLoginUser() throws Exception {
+        DummyProductRegistrationController controller =
+                new DummyProductRegistrationController(productRegistrationService);
+        MockMvc unauthorizedMockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new LoginUserTestArgumentResolver(null))
+                .build();
+
+        unauthorizedMockMvc.perform(
+                        delete("/products/registrations")
+                                .contentType("application/json")
+                                .content("""
+                                        {
+                                          "registrationIds": [10, 11]
+                                        }
+                                        """)
+                )
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(productRegistrationService);

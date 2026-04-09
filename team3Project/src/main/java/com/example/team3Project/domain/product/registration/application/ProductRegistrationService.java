@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public class ProductRegistrationService {
     private final DummyProductRegistrationRepository dummyProductRegistrationRepository;
     private final ObjectMapper objectMapper;
 
+    // 더미 등록 저장 시 같은 사용자/상품 조합은 새로 만들지 않고 기존 데이터를 갱신한다.
     public DummyProductRegistration register(
             Long userId,
             MarketCode marketCode,
@@ -48,10 +50,27 @@ public class ProductRegistrationService {
             RegistrationStatus registrationStatus,
             String exclusionReason
     ) {
-        DummyProductRegistration registration = DummyProductRegistration.create(
-                userId,
-                marketCode,
-                sourceProductId,
+        DummyProductRegistration registration = dummyProductRegistrationRepository
+                .findByUserIdAndMarketCodeAndSourceProductId(userId, marketCode, sourceProductId)
+                .orElseGet(() -> DummyProductRegistration.create(
+                        userId,
+                        marketCode,
+                        sourceProductId,
+                        sourceUrl,
+                        mainImageUrl,
+                        processedProductName,
+                        processedBrand,
+                        originalPrice,
+                        currency,
+                        exchangeRate,
+                        costInKrw,
+                        salePrice,
+                        shippingFee,
+                        registrationStatus,
+                        exclusionReason
+                ));
+
+        registration.update(
                 sourceUrl,
                 mainImageUrl,
                 processedProductName,
@@ -65,19 +84,19 @@ public class ProductRegistrationService {
                 registrationStatus,
                 exclusionReason
         );
-
         registration.replaceOptions(toDummyOptions(sourcingVariations));
         registration.replaceImages(toDummyImages(mainImageUrl, descriptionImageUrls, sourcingVariations));
 
         return dummyProductRegistrationRepository.save(registration);
     }
 
+    // 로그인 사용자와 마켓 코드 기준으로 등록 목록을 조회한다.
     public List<DummyProductRegistration> getRegistrations(Long userId, MarketCode marketCode) {
         return dummyProductRegistrationRepository.findByUserIdAndMarketCode(userId, marketCode);
     }
 
+    // 단건 조회는 현재 로그인 사용자의 소유 데이터만 반환한다.
     public DummyProductRegistration getRegistration(Long userId, Long registrationId) {
-        // 단건 조회도 현재 로그인 사용자의 소유 데이터만 반환한다.
         return dummyProductRegistrationRepository.findByDummyProductRegistrationIdAndUserId(registrationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -85,13 +104,41 @@ public class ProductRegistrationService {
                 ));
     }
 
+    // 단건 삭제는 현재 로그인 사용자의 소유 데이터만 제거한다.
+    public void deleteRegistration(Long userId, Long registrationId) {
+        DummyProductRegistration registration = dummyProductRegistrationRepository
+                .findByDummyProductRegistrationIdAndUserId(registrationId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "삭제할 등록 상품을 찾을 수 없습니다. id=" + registrationId
+                ));
+
+        dummyProductRegistrationRepository.delete(registration);
+    }
+
+    // 선택 삭제는 전달받은 ID 목록이 모두 현재 로그인 사용자 소유일 때만 한 번에 제거한다.
+    public void deleteRegistrations(Long userId, List<Long> registrationIds) {
+        List<Long> distinctIds = new ArrayList<>(new LinkedHashSet<>(registrationIds));
+        List<DummyProductRegistration> registrations =
+                dummyProductRegistrationRepository.findAllByDummyProductRegistrationIdInAndUserId(distinctIds, userId);
+
+        if (registrations.size() != distinctIds.size()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "삭제할 등록 상품 중 조회되지 않는 항목이 있습니다."
+            );
+        }
+
+        dummyProductRegistrationRepository.deleteAll(registrations);
+    }
+
+    // variation 원본을 더미 등록용 옵션 엔티티 목록으로 변환한다.
     private List<DummyProductOption> toDummyOptions(List<SourcingVariationResponse> sourcingVariations) {
         List<DummyProductOption> options = new ArrayList<>();
         if (sourcingVariations == null) {
             return options;
         }
 
-        // variation 원본을 더미 등록용 옵션 엔티티 목록으로 변환한다.
         for (SourcingVariationResponse variation : sourcingVariations) {
             options.add(
                     DummyProductOption.create(
@@ -109,12 +156,12 @@ public class ProductRegistrationService {
         return options;
     }
 
+    // 대표/설명/옵션 이미지를 한 컬렉션으로 모아 등록 엔티티에 저장한다.
     private List<DummyProductImage> toDummyImages(
             String mainImageUrl,
             List<String> descriptionImageUrls,
             List<SourcingVariationResponse> sourcingVariations
     ) {
-        // 대표/설명/옵션 이미지를 한 컬렉션으로 모아 등록 엔티티에 저장한다.
         List<DummyProductImage> images = new ArrayList<>();
 
         if (mainImageUrl != null && !mainImageUrl.isBlank()) {
@@ -156,6 +203,7 @@ public class ProductRegistrationService {
         return images;
     }
 
+    // 옵션 dimensions 맵은 JSON 문자열로 변환해 저장한다.
     private String toDimensionsJson(Map<String, String> dimensions) {
         if (dimensions == null || dimensions.isEmpty()) {
             return null;
