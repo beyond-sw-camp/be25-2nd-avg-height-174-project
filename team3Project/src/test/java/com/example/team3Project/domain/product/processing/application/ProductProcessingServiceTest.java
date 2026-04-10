@@ -8,6 +8,7 @@ import com.example.team3Project.domain.policy.dto.ReplacementWordResponse;
 import com.example.team3Project.domain.policy.entity.MarketCode;
 import com.example.team3Project.domain.policy.entity.PriceRoundingUnit;
 import com.example.team3Project.domain.policy.entity.ShippingFeeType;
+import com.example.team3Project.domain.product.coupang.application.DummyCoupangProductService;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingRequest;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingResultResponse;
 import com.example.team3Project.domain.product.processing.dto.SourcingVariationResponse;
@@ -44,8 +45,9 @@ class ProductProcessingServiceTest {
     void processProductName_returnsEmpty_whenBlockedWordExists() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 defaultPolicySetting(),
@@ -66,8 +68,9 @@ class ProductProcessingServiceTest {
     void processProductName_appliesReplacementWords() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 defaultPolicySetting(),
@@ -92,8 +95,9 @@ class ProductProcessingServiceTest {
     void processProductName_returnsOriginalName_whenNoPolicyMatches() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 defaultPolicySetting(),
@@ -115,8 +119,9 @@ class ProductProcessingServiceTest {
     void processProduct_returnsBlocked_whenBlockedWordExists() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 defaultPolicySetting(),
@@ -189,8 +194,9 @@ class ProductProcessingServiceTest {
     void processProduct_usesMarginRateOnly_whenMinMarginProtectDisabled() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 policySettingWithMinMarginProtect(false, BigDecimal.valueOf(30), BigDecimal.valueOf(5000)),
@@ -254,8 +260,9 @@ class ProductProcessingServiceTest {
     void processProduct_passesVariationListToRegistrationService() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 defaultPolicySetting(),
@@ -319,8 +326,9 @@ class ProductProcessingServiceTest {
     void processProduct_throwsException_whenTotalFeeRateIsInvalid() {
         PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
         ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
         ProductProcessingService productProcessingService =
-                new ProductProcessingService(policyQueryService, productRegistrationService);
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
 
         PolicyBundle policyBundle = new PolicyBundle(
                 policySettingWithFee(BigDecimal.valueOf(70), BigDecimal.valueOf(30)),
@@ -354,6 +362,99 @@ class ProductProcessingServiceTest {
                 any(),
                 any()
         );
+        verify(dummyCoupangProductService, never()).publishAutomatically(anyLong(), anyLong());
+    }
+
+    @Test
+    @DisplayName("자동 발행 정책이 켜져 있으면 쿠팡 등록 후보 저장 직후 자동 발행한다")
+    void processProduct_autoPublishes_whenAutoPublishEnabled() {
+        PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
+        ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
+        ProductProcessingService productProcessingService =
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
+
+        PolicyBundle policyBundle = new PolicyBundle(
+                policySettingWithAutoPublish(true),
+                List.of(),
+                List.of()
+        );
+
+        DummyProductRegistration savedRegistration = createRegistration(RegistrationStatus.READY, null);
+        ReflectionTestUtils.setField(savedRegistration, "dummyProductRegistrationId", 99L);
+
+        when(policyQueryService.getPolicyBundle(1L, MarketCode.COUPANG)).thenReturn(policyBundle);
+        when(productRegistrationService.register(
+                anyLong(),
+                any(),
+                anyString(),
+                anyString(),
+                anyString(),
+                any(List.class),
+                any(List.class),
+                anyString(),
+                anyString(),
+                any(BigDecimal.class),
+                anyString(),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(),
+                any()
+        )).thenReturn(savedRegistration);
+
+        ProductProcessingRequest request = createRequest("정상 상품", "브랜드", BigDecimal.valueOf(10));
+
+        productProcessingService.processProduct(1L, MarketCode.COUPANG, request);
+
+        verify(dummyCoupangProductService).publishAutomatically(1L, 99L);
+    }
+
+    @Test
+    @DisplayName("자동 발행 정책이 꺼져 있으면 등록 후보만 저장하고 자동 발행하지 않는다")
+    void processProduct_doesNotAutoPublish_whenAutoPublishDisabled() {
+        PolicyQueryService policyQueryService = mock(PolicyQueryService.class);
+        ProductRegistrationService productRegistrationService = mock(ProductRegistrationService.class);
+        DummyCoupangProductService dummyCoupangProductService = mock(DummyCoupangProductService.class);
+        ProductProcessingService productProcessingService =
+                new ProductProcessingService(policyQueryService, productRegistrationService, dummyCoupangProductService);
+
+        PolicyBundle policyBundle = new PolicyBundle(
+                policySettingWithAutoPublish(false),
+                List.of(),
+                List.of()
+        );
+
+        DummyProductRegistration savedRegistration = createRegistration(RegistrationStatus.READY, null);
+        ReflectionTestUtils.setField(savedRegistration, "dummyProductRegistrationId", 99L);
+
+        when(policyQueryService.getPolicyBundle(1L, MarketCode.COUPANG)).thenReturn(policyBundle);
+        when(productRegistrationService.register(
+                anyLong(),
+                any(),
+                anyString(),
+                anyString(),
+                anyString(),
+                any(List.class),
+                any(List.class),
+                anyString(),
+                anyString(),
+                any(BigDecimal.class),
+                anyString(),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(BigDecimal.class),
+                any(),
+                any()
+        )).thenReturn(savedRegistration);
+
+        ProductProcessingRequest request = createRequest("정상 상품", "브랜드", BigDecimal.valueOf(10));
+
+        productProcessingService.processProduct(1L, MarketCode.COUPANG, request);
+
+        verify(dummyCoupangProductService, never()).publishAutomatically(anyLong(), anyLong());
     }
 
     private PolicySettingResponse defaultPolicySetting() {
@@ -372,6 +473,7 @@ class ProductProcessingServiceTest {
                 true,
                 false,
                 true,
+                false,
                 ShippingFeeType.PAID_SHIPPING,
                 BigDecimal.valueOf(3000),
                 BigDecimal.valueOf(5000),
@@ -399,6 +501,7 @@ class ProductProcessingServiceTest {
                 minMarginProtectEnabled,
                 false,
                 true,
+                false,
                 ShippingFeeType.PAID_SHIPPING,
                 BigDecimal.valueOf(3000),
                 BigDecimal.valueOf(5000),
@@ -422,6 +525,31 @@ class ProductProcessingServiceTest {
                 true,
                 false,
                 true,
+                false,
+                ShippingFeeType.PAID_SHIPPING,
+                BigDecimal.valueOf(3000),
+                BigDecimal.valueOf(5000),
+                BigDecimal.valueOf(5000)
+        );
+    }
+
+    private PolicySettingResponse policySettingWithAutoPublish(boolean autoPublishEnabled) {
+        return new PolicySettingResponse(
+                1L,
+                1L,
+                MarketCode.COUPANG,
+                BigDecimal.valueOf(30),
+                BigDecimal.valueOf(5000),
+                BigDecimal.valueOf(10),
+                BigDecimal.valueOf(3.3),
+                BigDecimal.valueOf(1350),
+                PriceRoundingUnit.HUNDRED_WON,
+                false,
+                false,
+                true,
+                false,
+                true,
+                autoPublishEnabled,
                 ShippingFeeType.PAID_SHIPPING,
                 BigDecimal.valueOf(3000),
                 BigDecimal.valueOf(5000),

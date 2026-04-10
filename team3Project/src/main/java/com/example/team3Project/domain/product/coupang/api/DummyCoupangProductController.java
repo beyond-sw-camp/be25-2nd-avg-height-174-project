@@ -35,7 +35,7 @@ public class DummyCoupangProductController {
             return ResponseEntity.status(401).build();
         }
 
-        DummyCoupangProduct product = dummyCoupangProductService.publish(user.getId(), registrationId);
+        DummyCoupangProduct product = dummyCoupangProductService.publishManually(user.getId(), registrationId);
         return ResponseEntity.ok(product);
     }
 
@@ -50,7 +50,7 @@ public class DummyCoupangProductController {
         }
 
         List<DummyCoupangProduct> products =
-                dummyCoupangProductService.publishAll(user.getId(), request.getRegistrationIds());
+                dummyCoupangProductService.publishAllManually(user.getId(), request.getRegistrationIds());
         return ResponseEntity.ok(products);
     }
 

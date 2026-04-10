@@ -49,7 +49,7 @@ class DummyCoupangProductControllerTest {
     @DisplayName("등록 후보 1건을 쿠팡 더미 상품으로 발행한다")
     void publish_returnsPublishedProduct() throws Exception {
         DummyCoupangProduct product = createProduct(30L, "ASIN-001", "쿠팡 상품명");
-        when(dummyCoupangProductService.publish(1L, 10L)).thenReturn(product);
+        when(dummyCoupangProductService.publishManually(1L, 10L)).thenReturn(product);
 
         mockMvc.perform(post("/products/registrations/10/publish/coupang"))
                 .andExpect(status().isOk())
@@ -61,7 +61,7 @@ class DummyCoupangProductControllerTest {
     @Test
     @DisplayName("등록 후보 여러 건을 쿠팡 더미 상품으로 한 번에 발행한다")
     void publishAll_returnsPublishedProducts() throws Exception {
-        when(dummyCoupangProductService.publishAll(1L, List.of(10L, 11L)))
+        when(dummyCoupangProductService.publishAllManually(1L, List.of(10L, 11L)))
                 .thenReturn(List.of(
                         createProduct(30L, "ASIN-001", "쿠팡 상품명1"),
                         createProduct(31L, "ASIN-002", "쿠팡 상품명2")

@@ -7,6 +7,7 @@ import com.example.team3Project.domain.policy.dto.ProductNameProcessingResponse;
 import com.example.team3Project.domain.policy.dto.ReplacementWordResponse;
 import com.example.team3Project.domain.policy.entity.MarketCode;
 import com.example.team3Project.domain.policy.entity.ShippingFeeType;
+import com.example.team3Project.domain.product.coupang.application.DummyCoupangProductService;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingRequest;
 import com.example.team3Project.domain.product.processing.dto.ProductProcessingResultResponse;
 import com.example.team3Project.domain.product.registration.application.ProductRegistrationService;
@@ -29,6 +30,7 @@ public class ProductProcessingService {
 
     private final PolicyQueryService policyQueryService;
     private final ProductRegistrationService productRegistrationService;
+    private final DummyCoupangProductService dummyCoupangProductService;
 
     // 가공에 사용할 정책 묶음을 가져오는 메서드
     public PolicyBundle getPolicyBundleForProcessing(Long userId, MarketCode marketCode) {
@@ -191,6 +193,8 @@ public class ProductProcessingService {
                         exclusionReason
                 );
 
+        autoPublishIfEnabled(policyBundle, savedRegistration);
+
         return new ProductProcessingResultResponse(
                 excluded,
                 exclusionReason,
@@ -204,6 +208,23 @@ public class ProductProcessingService {
                 excluded ? null : shippingFee,
                 savedRegistration.getRegistrationStatus().name()
         );
+    }
+
+    private void autoPublishIfEnabled(PolicyBundle policyBundle, DummyProductRegistration savedRegistration) {
+        if (!policyBundle.getPolicySettingResponse().isAutoPublishEnabled()) {
+            return;
+        }
+
+        if (savedRegistration.getRegistrationStatus() != RegistrationStatus.READY) {
+            return;
+        }
+
+        if (savedRegistration.getMarketCode() == MarketCode.COUPANG) {
+            dummyCoupangProductService.publishAutomatically(
+                    savedRegistration.getUserId(),
+                    savedRegistration.getDummyProductRegistrationId()
+            );
+        }
     }
 
     // 상품명 가공 결과를 응답 DTO에 담는 메서드 - 나중에 제외시킬 수도 있음

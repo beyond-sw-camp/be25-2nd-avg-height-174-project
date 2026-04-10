@@ -1,6 +1,7 @@
 package com.example.team3Project.domain.product.coupang.entity;
 
 import com.example.team3Project.domain.product.registration.entity.DummyProductRegistration;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -71,6 +72,7 @@ public class DummyCoupangProduct {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dummy_product_registration_id", nullable = false)
+    @JsonIgnore
     private DummyProductRegistration registration;
 
     @JsonManagedReference("coupang-product-options")

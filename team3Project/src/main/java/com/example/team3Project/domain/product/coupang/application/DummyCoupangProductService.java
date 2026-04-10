@@ -1,6 +1,8 @@
 package com.example.team3Project.domain.product.coupang.application;
 
+import com.example.team3Project.domain.policy.application.PolicySettingService;
 import com.example.team3Project.domain.policy.entity.MarketCode;
+import com.example.team3Project.domain.policy.exception.PolicySettingNotFoundException;
 import com.example.team3Project.domain.product.coupang.dao.DummyCoupangProductRepository;
 import com.example.team3Project.domain.product.coupang.entity.DummyCoupangProduct;
 import com.example.team3Project.domain.product.coupang.entity.DummyCoupangProductImage;
@@ -27,11 +29,21 @@ public class DummyCoupangProductService {
 
     private final DummyCoupangProductRepository dummyCoupangProductRepository;
     private final DummyProductRegistrationRepository dummyProductRegistrationRepository;
+    private final PolicySettingService policySettingService;
 
-    // 등록 후보 1건을 쿠팡 더미 상품으로 발행한다.
-    public DummyCoupangProduct publish(Long userId, Long registrationId) {
+    // 등록 후보 1건을 정책 기준 수동 발행 규칙에 따라 더미 쿠팡 상품으로 등록한다.
+    public DummyCoupangProduct publishManually(Long userId, Long registrationId) {
+        validateManualPublishAllowed(userId);
+        return publishRegistration(userId, registrationId);
+    }
+
+    // 가공 직후 자동 발행은 정책이 켜진 상태에서 내부 흐름만 사용한다.
+    public DummyCoupangProduct publishAutomatically(Long userId, Long registrationId) {
+        return publishRegistration(userId, registrationId);
+    }
+
+    private DummyCoupangProduct publishRegistration(Long userId, Long registrationId) {
         DummyProductRegistration registration = getPublishableRegistration(userId, registrationId);
-
         DummyCoupangProduct product = dummyCoupangProductRepository
                 .findByUserIdAndSourceProductId(userId, registration.getSourceProductId())
                 .orElseGet(() -> DummyCoupangProduct.create(registration));
@@ -44,13 +56,14 @@ public class DummyCoupangProductService {
         return dummyCoupangProductRepository.save(product);
     }
 
-    // 여러 등록 후보를 한 번에 쿠팡 더미 상품으로 발행한다.
-    public List<DummyCoupangProduct> publishAll(Long userId, List<Long> registrationIds) {
+    // 여러 등록 후보를 한 번에 정책 기준 수동 발행 규칙에 따라 등록한다.
+    public List<DummyCoupangProduct> publishAllManually(Long userId, List<Long> registrationIds) {
+        validateManualPublishAllowed(userId);
         List<Long> distinctIds = new ArrayList<>(new LinkedHashSet<>(registrationIds));
         List<DummyCoupangProduct> products = new ArrayList<>();
 
         for (Long registrationId : distinctIds) {
-            products.add(publish(userId, registrationId));
+            products.add(publishRegistration(userId, registrationId));
         }
 
         return products;
@@ -68,23 +81,23 @@ public class DummyCoupangProductService {
         return dummyCoupangProductRepository.findByDummyCoupangProductIdAndUserId(dummyCoupangProductId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "쿠팡 더미 상품을 찾을 수 없습니다. id=" + dummyCoupangProductId
+                        "상품을 찾을 수 없습니다. id=" + dummyCoupangProductId
                 ));
     }
 
-    // 발행 가능한 등록 후보인지 검증하고 본인 소유 데이터만 가져온다.
+    // 마켓에 등록이 가능한 등록 후보인지 검증하고 사용자 소유 데이터만 가져온다.
     private DummyProductRegistration getPublishableRegistration(Long userId, Long registrationId) {
         DummyProductRegistration registration = dummyProductRegistrationRepository
                 .findByDummyProductRegistrationIdAndUserId(registrationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "발행할 등록 상품을 찾을 수 없습니다. id=" + registrationId
+                        "등록 상품을 찾을 수 없습니다. id=" + registrationId
                 ));
 
         if (registration.getMarketCode() != MarketCode.COUPANG) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "쿠팡 마켓 등록 후보만 발행할 수 있습니다."
+                    "쿠팡 마켓 등록 후보만 등록할 수 있습니다."
             );
         }
 
@@ -97,6 +110,26 @@ public class DummyCoupangProductService {
         }
 
         return registration;
+    }
+
+    private void validateManualPublishAllowed(Long userId) {
+        try {
+            boolean autoPublishEnabled = policySettingService
+                    .getPolicySetting(userId, MarketCode.COUPANG)
+                    .isAutoPublishEnabled();
+
+            if (autoPublishEnabled) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "쿠팡 자동 발행 정책이 활성화되어 있어 수동 등록할 수 없습니다."
+                );
+            }
+        } catch (PolicySettingNotFoundException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "쿠팡 정책 설정이 존재하지 않아 등록 방식을 확인할 수 없습니다."
+            );
+        }
     }
 
     // 등록 후보 옵션을 쿠팡 더미 상품 옵션으로 그대로 복사한다.
