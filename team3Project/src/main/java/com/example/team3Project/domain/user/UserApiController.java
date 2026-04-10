@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user")
+// Vue 같은 분리 프론트가 사용하는 사용자 JSON API를 제공한다.
 public class UserApiController {
 
     private static final String ACCESS_TOKEN_COOKIE = "token";
@@ -68,6 +69,7 @@ public class UserApiController {
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
+        // 프론트 앱이 시작될 때 현재 로그인 사용자 정보를 확인할 수 있도록 내려준다.
         return ResponseEntity.ok(UserResponse.from(user));
     }
 

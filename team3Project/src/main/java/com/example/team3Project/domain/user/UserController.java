@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/users")
+// 현재 인증 주체는 별도 로그인 서비스이며, 이 컨트롤러는 남아 있는 서버 렌더링 사용자 화면을 담당한다.
 public class UserController {
 
     private static final String ACCESS_TOKEN_COOKIE = "token";
