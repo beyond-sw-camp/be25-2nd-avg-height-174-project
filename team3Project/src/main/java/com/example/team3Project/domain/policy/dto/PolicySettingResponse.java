@@ -30,6 +30,7 @@ public class PolicySettingResponse {
     private boolean minMarginProtectEnabled;        // 최소 마진 보호
     private boolean priceAutoUpdateEnabled; // 환율 변동 시 가격 자동 업데이트
     private boolean stopLossEnabled;           // 손실 발생 시 판매 중지
+    private boolean autoPublishEnabled;        // 해당 마켓 자동 발행 여부
 
     // 배송비 정책
     private ShippingFeeType shippingFeeType;       // 배송비 종류 (유료배송, 무료배송)

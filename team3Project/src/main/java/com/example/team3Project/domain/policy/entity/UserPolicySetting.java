@@ -66,6 +66,8 @@ public class UserPolicySetting {
     private boolean priceAutoUpdateEnabled; // 환율 변동 시 가격 자동 업데이트
     @Column(name = "stop_loss_enabled", nullable = false)
     private boolean stopLossEnabled;           // 손실 발생 시 판매 중지
+    @Column(name = "auto_publish_enabled", nullable = false)
+    private boolean autoPublishEnabled;        // 해당 마켓 자동 발행 여부 - 가공 후 등록 대기를 거치지 않고 자동 발행
 
     // 배송비 정책
     @Enumerated(EnumType.STRING)
@@ -96,6 +98,7 @@ public class UserPolicySetting {
             boolean minMarginProtectEnabled,
             boolean priceAutoUpdateEnabled,
             boolean stopLossEnabled,
+            boolean autoPublishEnabled,
             ShippingFeeType shippingFeeType,
             BigDecimal baseShippingFee,
             BigDecimal remoteAreaExtraShippingFee,
@@ -115,6 +118,7 @@ public class UserPolicySetting {
         setting.minMarginProtectEnabled = minMarginProtectEnabled;
         setting.priceAutoUpdateEnabled = priceAutoUpdateEnabled;
         setting.stopLossEnabled = stopLossEnabled;
+        setting.autoPublishEnabled = autoPublishEnabled;
         setting.shippingFeeType = shippingFeeType;
         setting.baseShippingFee = baseShippingFee;
         setting.remoteAreaExtraShippingFee = remoteAreaExtraShippingFee;
@@ -135,6 +139,7 @@ public class UserPolicySetting {
             boolean minMarginProtectEnabled,
             boolean priceAutoUpdateEnabled,
             boolean stopLossEnabled,
+            boolean autoPublishEnabled,
             ShippingFeeType shippingFeeType,
             BigDecimal baseShippingFee,
             BigDecimal remoteAreaExtraShippingFee,
@@ -152,6 +157,7 @@ public class UserPolicySetting {
         this.minMarginProtectEnabled = minMarginProtectEnabled;
         this.priceAutoUpdateEnabled = priceAutoUpdateEnabled;
         this.stopLossEnabled = stopLossEnabled;
+        this.autoPublishEnabled = autoPublishEnabled;
         this.shippingFeeType = shippingFeeType;
         this.baseShippingFee = baseShippingFee;
         this.remoteAreaExtraShippingFee = remoteAreaExtraShippingFee;

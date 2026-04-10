@@ -48,6 +48,8 @@ public class PolicySettingUpsertRequest {
 
     private boolean stopLossEnabled;           // 손실 발생 시 판매 중지
 
+    private boolean autoPublishEnabled;        // 해당 마켓 자동 발행 여부
+
     @NotNull
     private ShippingFeeType shippingFeeType;       // 배송비 종류
 
