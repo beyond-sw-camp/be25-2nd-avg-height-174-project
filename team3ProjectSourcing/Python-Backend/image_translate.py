@@ -125,28 +125,46 @@ def translate(req: TranslateRequest):
         }
 
         nano_response = None
-        for attempt in range(3):  # 429 에러 시 최대 3회 재시도
-            nano_response = requests.post(
-                f"{NANOBANANA_API_URL}?key={NANOBANANA_API_KEY}",
-                json=payload,
-                timeout=240
-            )
+        max_retries = 4
+        for attempt in range(max_retries):
+            try:
+                nano_response = requests.post(
+                    f"{NANOBANANA_API_URL}?key={NANOBANANA_API_KEY}",
+                    json=payload,
+                    timeout=240
+                )
+            except requests.exceptions.Timeout:
+                wait_time = 2 ** (attempt + 1)
+                print(f"Gemini 응답 타임아웃. {wait_time:.1f}s 후 재시도 ({attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(wait_time)
+                    continue
+                raise
+
             if nano_response.status_code == 429:
-                wait_time = 2 ** (attempt + 1)  # 기본 대기 시간 (초)
+                wait_time = 2 ** (attempt + 1)
                 try:
                     error_data = nano_response.json()
                     details = error_data.get('error', {}).get('details', [])
                     for detail in details:
                         if detail.get('@type') == 'type.googleapis.com/google.rpc.RetryInfo':
                             delay_str = detail.get('retryDelay', '0s').replace('s', '')
-                            wait_time = float(delay_str) + 1  # API 지연시간 + 1초 버퍼
+                            wait_time = float(delay_str) + 1
                             break
                 except Exception:
-                    # JSON 파싱 실패 등 예외 발생 시 기본 대기 시간 사용
                     pass
-                print(f"Quota 초과 (429). {wait_time:.1f}초 후 재시도합니다... ({attempt + 1}/3)")
+                print(f"Quota 초과 (429). {wait_time:.1f}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
                 continue
+
+            if nano_response.status_code == 503:
+                wait_time = 1.5 * (2 ** attempt)
+                print(f"Gemini 응답 503, {nano_response.text[:120]}… → {wait_time:.1f}s 후 재시도 ({attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(wait_time)
+                    continue
+                nano_response.raise_for_status()
+
             nano_response.raise_for_status()
             break
 

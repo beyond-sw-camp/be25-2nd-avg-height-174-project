@@ -60,7 +60,7 @@ public class SourcingController {
             HttpServletRequest request,
             @RequestBody SourcingDTO sourcingDTO) {
         Map<String, Object> response = new HashMap<>();
-
+        // 여기서 토큰 검증 먼저 하고 그다음에 소싱한 데이터 맞는지 확인.
         Long userId = requestUserIdResolver.resolveForApi(request);
         if (userId == null) {
             response.put("status", "error");
@@ -89,7 +89,6 @@ public class SourcingController {
             response.put("normalizationError", outcome.normalizationErrorMessage());
         }
         response.put("userId", userId);
-
 
         // 가공 서비스에 소싱 데이터 보내기.
         sourcingProcessingWebhookService.notifyAfterSave(userId, outcome, sourcingDTO);

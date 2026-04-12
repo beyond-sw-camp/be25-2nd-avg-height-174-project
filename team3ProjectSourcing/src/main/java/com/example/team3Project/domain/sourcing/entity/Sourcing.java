@@ -79,5 +79,5 @@ public class Sourcing{
     public void setRegistrationStatus(SourcingRegistrationStatus registrationStatus) {
         this.registrationStatus = registrationStatus;
     }
-    
+
 }
