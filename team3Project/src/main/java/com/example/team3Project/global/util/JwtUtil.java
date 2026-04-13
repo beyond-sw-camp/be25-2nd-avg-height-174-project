@@ -22,6 +22,12 @@ public class JwtUtil {
 
     private final SecretKey secretKey;
 
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String cookieSameSite;
+
     public JwtUtil(@Value("${jwt.secret:my-256-bit-secret-key-for-jwt-signing-and-verification}") String secret) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
@@ -111,14 +117,16 @@ public class JwtUtil {
 
     /**
      * HttpOnly Cookie 생성
+     * Gateway 환경에서도 쿠키가 정상 전달되도록 설정
      */
     public ResponseCookie createJwtCookie(String token) {
+        log.debug("Creating JWT cookie - secure: {}, sameSite: {}", cookieSecure, cookieSameSite);
         return ResponseCookie.from(COOKIE_NAME, token)
                 .httpOnly(true)
-                .secure(false) // HTTPS 환경에서는 true로 변경
+                .secure(cookieSecure) // HTTPS 환경에서는 true로 설정 (app.cookie.secure)
                 .path("/")
                 .maxAge(TOKEN_VALIDITY_MS / 1000)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite) // Gateway 구조에 맞게 설정 (None, Lax, Strict)
                 .build();
     }
 
@@ -165,12 +173,13 @@ public class JwtUtil {
      * 로그아웃용 쿠키 삭제 (빈 쿠키로 덮어쓰기)
      */
     public ResponseCookie deleteJwtCookie() {
+        log.debug("Deleting JWT cookie - secure: {}, sameSite: {}", cookieSecure, cookieSameSite);
         return ResponseCookie.from(COOKIE_NAME, "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .build();
     }
 }

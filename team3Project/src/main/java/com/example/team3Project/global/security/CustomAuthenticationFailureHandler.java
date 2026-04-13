@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -21,6 +22,9 @@ import java.io.IOException;
 public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final UserRepository userRepository;
+
+    @Value("${app.gateway-url:http://100.119.201.17:9000}")
+    private String gatewayUrl;
 
     @Override
     @Transactional
@@ -51,15 +55,17 @@ public class CustomAuthenticationFailureHandler implements AuthenticationFailure
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"success\":false,\"error\":\"" + errorMessage + "\"}");
         } else {
-            // 리다이렉트 URL 유지
+            // 리다이렉트 URL 유지 (Gateway 기준 절대경로)
             String redirectURL = request.getParameter("redirectURL");
-            if (redirectURL == null || redirectURL.isEmpty()) {
-                redirectURL = "/";
+            if (redirectURL == null || redirectURL.isEmpty() || redirectURL.equals("/")) {
+                redirectURL = gatewayUrl;
             }
 
-            response.sendRedirect("/users/login?error=" + errorMessage + "&username=" +
+            String loginUrl = gatewayUrl + "/users/login?error=" + errorMessage + "&username=" +
                     (username != null ? java.net.URLEncoder.encode(username, "UTF-8") : "") +
-                    "&redirectURL=" + java.net.URLEncoder.encode(redirectURL, "UTF-8"));
+                    "&redirectURL=" + java.net.URLEncoder.encode(redirectURL, "UTF-8");
+            log.info("로그인 실패 후 리다이렉트: {}", loginUrl);
+            response.sendRedirect(loginUrl);
         }
     }
 

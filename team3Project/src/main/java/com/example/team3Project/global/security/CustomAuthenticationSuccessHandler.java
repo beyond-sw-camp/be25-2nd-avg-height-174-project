@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +25,9 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+
+    @Value("${app.frontend-url:http://100.119.201.17:9000}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -52,10 +56,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         ResponseCookie cookie = jwtUtil.createJwtCookie(token);
         response.addHeader("Set-Cookie", cookie.toString());
 
-        // 리다이렉트 URL 가져오기 (기본값: 프론트엔드 Vue 서버)
+        // 리다이렉트 URL 가져오기 (기본값: 환경변수 기반 Frontend 주소)
         String redirectURL = request.getParameter("redirectURL");
-        if (redirectURL == null || redirectURL.isEmpty() || redirectURL.contains("/users/login")) {
-            redirectURL = "http://100.119.201.17:9000/";
+        if (redirectURL == null || redirectURL.isEmpty() || redirectURL.contains("/users/login") || redirectURL.equals("/")) {
+            redirectURL = frontendUrl;
         }
 
         log.info("일반 로그인 성공: userId={}, username={}, redirectURL={}",

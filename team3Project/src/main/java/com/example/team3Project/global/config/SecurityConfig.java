@@ -9,6 +9,7 @@ import com.example.team3Project.global.security.oauth2.OAuth2LoginSuccessHandler
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,12 @@ public class SecurityConfig {
     private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.gateway-url:http://100.119.201.17:9000}")
+    private String gatewayUrl;
+
+    @Value("${app.frontend-url:http://100.119.201.17:9000}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -91,11 +98,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Vue 개발 서버 주소 허용 (필요시 추가)
+        // Gateway 및 Frontend 주소 허용 (API Gateway 기반 구조)
+        // 외부 클라이언트는 반드시 Gateway를 통해 접근
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",    // Vue 기본 개발 서버
-                "http://localhost:3000",    // 기타 개발 서버
-                "http://100.119.201.17:9000" // 배포된 Vue 주소 (확인 필요)
+                gatewayUrl,      // API Gateway 주소
+                frontendUrl      // Frontend 주소 (Gateway와 동일하거나 별도)
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

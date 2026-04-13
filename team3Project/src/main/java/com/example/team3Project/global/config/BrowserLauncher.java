@@ -15,8 +15,13 @@ public class BrowserLauncher implements ApplicationRunner {
     @Value("${server.port:8080}")
     private String serverPort;
 
+    /**
+     * 개발 환경에서만 사용 - 로컬 개발 시 브라우저 자동 오픈
+     * 프로덕션(Gateway 기반) 환경에서는 사용되지 않음
+     */
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        // 로컬 개발 환경에서만 사용 (Gateway 프록시 구조와 무관)
         String url = "http://localhost:" + serverPort;
         
         // 서버가 완전히 시작될 시간을 주기 위해 2초 대기
