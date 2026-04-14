@@ -170,11 +170,19 @@ def translate(req: TranslateRequest):
 
         result = nano_response.json()
 
-        if "candidates" not in result:
+        if "candidates" not in result or not result["candidates"]:
             print(f"Gemini 응답 오류 (candidates 없음): {result}")
             raise ValueError("Gemini가 유효한 후보(candidates)를 반환하지 않았습니다. (Safety Filter 차단 등)")
 
-        parts = result["candidates"][0]["content"]["parts"]
+        cand0 = result["candidates"][0]
+        content = cand0.get("content") if isinstance(cand0, dict) else None
+        if not isinstance(content, dict):
+            print(f"Gemini 응답 오류 (content 없음): {result}")
+            raise ValueError("Gemini candidates[0].content가 없습니다.")
+        parts = content.get("parts")
+        if not parts:
+            print(f"Gemini 응답 오류 (parts 없음): {result}")
+            raise ValueError("Gemini content.parts가 없습니다.")
 
         # 디버그: Gemini 응답 구조 확인
         print(f"=== Gemini 응답 parts 수: {len(parts)} ===")

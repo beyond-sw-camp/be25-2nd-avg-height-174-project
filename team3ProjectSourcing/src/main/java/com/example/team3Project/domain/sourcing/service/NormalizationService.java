@@ -55,11 +55,11 @@ public class NormalizationService {
         String translatedTitle = titleFuture.join();
         String translatedBrand = brandFuture.join();
 
-        // 2. 상품 상세 이미지 번역 (최대 3장, 세마포어로 동시 2개 제한)
+        // 2. 상품 상세 이미지 번역 — desc에서 1장만 (Gemini 비용·시간 절감, 실제 서비스에서는 전부 번역) 
         List<String> descriptionImages = sourcing.getDescriptionImages();
         System.out.println("descriptionImages 수: " + (descriptionImages == null ? "null" : descriptionImages.size()));
         if (descriptionImages != null) {
-            List<String> limited = descriptionImages.stream().limit(3).toList();
+            List<String> limited = descriptionImages.stream().limit(1).toList();
             System.out.println("번역 대상 이미지 수: " + limited.size());
             long startTime = System.currentTimeMillis();
 
@@ -101,6 +101,7 @@ public class NormalizationService {
                     int i = idx.getAndIncrement();
                     uploaded.add(
                         uploader.uploadTranslatedImage(
+                            // 원본 이미지 주소를 MinIO에 업로드.
                                 sourcing.getUserId(), sourcing.getId(), imgPath, "desc/" + i)
                             .orElse(imgPath)
                     );
@@ -134,8 +135,8 @@ public class NormalizationService {
                 }
             }
 
-            // 3-2. 모든 variation 이미지를 한꺼번에 비동기 제출 (전체 최대 4장, 세마포어가 동시성 제한)
-            final int MAX_VARIATION_IMAGES = 3;
+            // 3-2. variation 이미지 — 옵션 종류와 무관하게 전체에서 1장만 번역 (세마포어가 동시성 제한)
+            final int MAX_VARIATION_IMAGES = 2;
             record ImageTask(SourcingVariation variation, int index, CompletableFuture<String> future) {}
             List<ImageTask> allTasks = new ArrayList<>();
 
