@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -129,7 +130,7 @@ public class UserController {
         return "redirect:/users/login";
     }
 
-    // HTML 뷰 - 브라우저에서 직접 접속
+    // HTML 뷰 - 브라우저에서 직접 접속 (Thymeleaf)
     @GetMapping("/me")
     public String myPageView(@LoginUser User user, Model model) {
         if (user == null) {
@@ -139,19 +140,8 @@ public class UserController {
         return "users/me";
     }
 
-    // JSON API - Vue 프론트에서 AJAX 호출
-    @GetMapping("/api/me")
-    @ResponseBody
-    public ResponseEntity<?> myPageApi(@LoginUser User user) {
-        if (user == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
-        }
-        return ResponseEntity.ok(Map.of(
-                "username", user.getUsername(),
-                "nickname", user.getNickname(),
-                "email", user.getEmail()
-        ));
-    }
+    // [Deprecated] /api/users/me 로 통합됨 (UserApiController)
+    // 프론트엔드는 GET /api/users/me 사용
 
     @GetMapping("/update")
     public String updateForm(@LoginUser User user, Model model) {
@@ -283,8 +273,19 @@ public class UserController {
     @PostMapping("/find-id")
     public String findId(@RequestParam("email") String email, Model model) {
         try {
-            String username = userService.findUsernameByEmail(email);
-            model.addAttribute("successMessage", "회원님의 아이디는 [" + username + "] 입니다.");
+            List<String> loginIds = userService.findAllLoginIdsByEmail(email);
+
+            if (loginIds.isEmpty()) {
+                model.addAttribute("errorMessage", "일치하는 회원 정보가 없습니다.");
+            } else if (loginIds.size() == 1) {
+                model.addAttribute("successMessage", "회원님의 아이디는 [" + loginIds.get(0) + "] 입니다.");
+                model.addAttribute("foundLoginIds", loginIds);
+                model.addAttribute("singleResult", true);
+            } else {
+                model.addAttribute("successMessage", "해당 이메일로 가입된 아이디가 " + loginIds.size() + "개 있습니다.");
+                model.addAttribute("foundLoginIds", loginIds);
+                model.addAttribute("multipleResults", true);
+            }
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
         }
@@ -297,14 +298,20 @@ public class UserController {
     }
 
     @PostMapping("/reset-pw")
-    public String resetPassword(@RequestParam("username") String username,
+    public String resetPassword(@RequestParam("loginId") String loginId,
                                 @RequestParam("email") String email,
                                 Model model) {
         try {
-            userService.resetPassword(username, email);
-            model.addAttribute("successMessage", "입력하신 이메일로 전송되었습니다.");
+            userService.resetPassword(loginId, email);
+            model.addAttribute("successMessage", "입력하신 이메일로 임시 비밀번호가 전송되었습니다.");
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
+        } catch (IllegalStateException e) {
+            // 이메일 발송 실패
+            model.addAttribute("errorMessage", e.getMessage());
+        } catch (RuntimeException e) {
+            // 기타 서버 오류
+            model.addAttribute("errorMessage", "비밀번호 재설정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         }
         return "users/reset-pw";
     }

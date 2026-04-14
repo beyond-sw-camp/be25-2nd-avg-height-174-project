@@ -54,7 +54,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configure(http))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/test", "/", "/users/login", "/users/signup", "/users/check-username",
+                        .requestMatchers("/api/test", "/api/users/find-id", "/api/users/reset-pw",
+                                "/", "/users/login", "/users/signup", "/users/check-username",
                                 "/users/find-id", "/users/reset-pw", "/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()

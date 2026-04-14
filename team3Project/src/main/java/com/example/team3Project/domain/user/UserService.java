@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -220,32 +221,84 @@ public class UserService {
         log.info("회원 탈퇴 완료: userId={}", userId);
     }
 
+    /**
+     * [Deprecated] 단일 사용자 조회용. 여러 사용자가 같은 이메일을 가질 수 있어 findAllLoginIdsByEmail 사용 권장
+     */
+    @Deprecated
     public String findUsernameByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
         return user.getUsername();
     }
 
-    @Transactional
-    public void resetPassword(String username, String email) {
-        User user = userRepository.findByUsernameAndEmail(username, email)
-                .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+    /**
+     * 이메일로 모든 로그인 아이디 조회 (같은 이메일로 여러 계정 가입 가능)
+     */
+    public List<String> findAllLoginIdsByEmail(String email) {
+        List<User> users = userRepository.findAllByEmail(email);
+        if (users.isEmpty()) {
+            throw new IllegalArgumentException("일치하는 회원 정보가 없습니다.");
+        }
+        return users.stream()
+                .map(User::getLoginId)
+                .distinct()
+                .toList();
+    }
 
-        // 소셜 로그인 사용자는 임시 비밀번호 발급 불가
+    @Transactional
+    public void resetPassword(String loginId, String email) {
+        log.info("[비밀번호 재설정] STEP 1 - 요청 수신: loginId={}, email={}", loginId, email);
+
+        // STEP 2: 사용자 조회
+        log.debug("[비밀번호 재설정] STEP 2 - 사용자 조회 시작");
+        User user = userRepository.findByLoginIdAndEmail(loginId, email)
+                .orElseThrow(() -> {
+                    log.warn("[비밀번호 재설정] STEP 2 - 사용자 조회 실패: loginId={}, email={}", loginId, email);
+                    return new IllegalArgumentException("아이디와 이메일 정보를 다시 확인해주세요.");
+                });
+        log.info("[비밀번호 재설정] STEP 2 - 사용자 조회 성공: userId={}", user.getId());
+
+        // STEP 3: 소셜 로그인 사용자 체크
+        log.debug("[비밀번호 재설정] STEP 3 - 소셜 로그인 여부 체크");
         if (user.isSocialUser()) {
+            log.warn("[비밀번호 재설정] STEP 3 - 소셜 로그인 사용자 차단: loginId={}", loginId);
             throw new IllegalArgumentException("소셜 로그인 사용자는 임시 비밀번호를 발급받을 수 없습니다.");
         }
+        log.info("[비밀번호 재설정] STEP 3 - 소셜 로그인 여부 체크 완료 (일반 사용자)");
 
+        // STEP 4: 임시 비밀번호 생성
+        log.debug("[비밀번호 재설정] STEP 4 - 임시 비밀번호 생성");
         String tempPassword = createTempPassword();
+        log.info("[비밀번호 재설정] STEP 4 - 임시 비밀번호 생성 완료");
 
-        user.setPassword(passwordEncoder.encode(tempPassword));
-        user.resetLoginFailCount();
-        if (user.isLocked()) {
-            user.unlock();
+        // STEP 5: 비밀번호 암호화 및 DB 저장
+        log.debug("[비밀번호 재설정] STEP 5 - 비밀번호 암호화 및 DB 저장");
+        try {
+            user.setPassword(passwordEncoder.encode(tempPassword));
+            user.resetLoginFailCount();
+            if (user.isLocked()) {
+                user.unlock();
+            }
+            // @Transactional로 인해 여기서 DB 저장
+            log.info("[비밀번호 재설정] STEP 5 - DB 저장 완료 (트랜잭션 내)");
+        } catch (Exception e) {
+            log.error("[비밀번호 재설정] STEP 5 - DB 저장 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("비밀번호 저장 중 오류가 발생했습니다.", e);
         }
 
-        emailService.sendTemporaryPassword(user.getEmail(), tempPassword);
-        log.info("임시 비밀번호 발급 완료: userId={}, email={}", user.getId(), user.getEmail());
+        // STEP 6: 이메일 발송
+        log.debug("[비밀번호 재설정] STEP 6 - 이메일 발송 시작: to={}", user.getEmail());
+        try {
+            emailService.sendTemporaryPassword(user.getEmail(), tempPassword);
+            log.info("[비밀번호 재설정] STEP 6 - 이메일 발송 완료");
+        } catch (Exception e) {
+            log.error("[비밀번호 재설정] STEP 6 - 이메일 발송 실패: error={}", e.getMessage(), e);
+            // 이메일 실패는 비즈니스 예외로 처리 - DB는 이미 저장됨
+            throw new IllegalStateException("임시 비밀번호는 생성되었으나 이메일 발송에 실패했습니다. 관리자에게 문의해주세요. (이메일: " + user.getEmail() + ")", e);
+        }
+
+        log.info("[비밀번호 재설정] STEP 7 - 전체 프로세스 완료: userId={}, loginId={}, email={}",
+                user.getId(), user.getLoginId(), user.getEmail());
     }
 
     private Optional<User> findUserByLoginIdOrEmail(String loginIdOrEmail) {

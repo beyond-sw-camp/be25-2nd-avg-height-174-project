@@ -1,6 +1,7 @@
 package com.example.team3Project.global.interceptor;
 
 import com.example.team3Project.global.util.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -8,12 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.Map;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtCheckInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -27,6 +31,8 @@ public class JwtCheckInterceptor implements HandlerInterceptor {
             requestURI.startsWith("/users/check-username") ||
             requestURI.startsWith("/users/find-id") ||
             requestURI.startsWith("/users/reset-pw") ||
+            requestURI.startsWith("/api/users/find-id") ||
+            requestURI.startsWith("/api/users/reset-pw") ||
             requestURI.startsWith("/oauth2") ||
             requestURI.startsWith("/login/oauth2") ||
             requestURI.startsWith("/css") ||
@@ -42,7 +48,18 @@ public class JwtCheckInterceptor implements HandlerInterceptor {
 
         if (token == null || !jwtUtil.validateToken(token)) {
             log.warn("JWT 인증 실패: {}", requestURI);
-            response.sendRedirect("/users/login?redirectURL=" + requestURI);
+
+            // API 경로는 JSON 401 반환, 나머지는 로그인 페이지로 리다이렉트
+            if (requestURI.startsWith("/api/")) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(objectMapper.writeValueAsString(Map.of(
+                        "error", "로그인이 필요합니다.",
+                        "code", "UNAUTHORIZED"
+                )));
+            } else {
+                response.sendRedirect("/users/login?redirectURL=" + requestURI);
+            }
             return false;
         }
 
