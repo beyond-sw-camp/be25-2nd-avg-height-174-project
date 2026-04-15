@@ -30,7 +30,7 @@
 </head>
 <body>
     <div class="back-button-wrap">
-        <button type="button" class="back-button" onclick="location.href='/'">
+        <button type="button" class="back-button" onclick="location.href='http://100.119.201.17:9000/'">
             ← 이전 화면
         </button>
     </div>
@@ -51,6 +51,16 @@
                        th:class="${#fields.hasErrors('nickname')} ? 'field-error' : ''" required>
                 <div class="error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}">
                     닉네임 오류
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="phoneNumber">전화번호</label>
+                <input type="tel" id="phoneNumber" th:field="*{phoneNumber}"
+                       th:class="${#fields.hasErrors('phoneNumber')} ? 'field-error' : ''" required
+                       placeholder="예: 010-1234-5678">
+                <div class="error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">
+                    전화번호 오류
                 </div>
             </div>
 

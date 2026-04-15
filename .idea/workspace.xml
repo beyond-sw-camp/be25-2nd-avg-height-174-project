@@ -4,31 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4c3ba028-ee6b-4691-8ea6-486c65fcd6c7" name="변경" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/be25-2nd-avg-height-174-project.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/home/HomeController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/User.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/UserService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/LoginRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SessionUser.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/domain/user/dto/SignupRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/SecurityConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/config/WebConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/interceptor/LoginCheckInterceptor.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/java/com/example/team3Project/global/util/SessionUtils.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/home.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/loginHome.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/login.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/team3Project/src/main/resources/templates/users/signup.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/team3Project/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/team3Project/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/team3Project/src/main/resources/application.properties" afterDir="false" />
-    </list>
+    <list default="true" id="4c3ba028-ee6b-4691-8ea6-486c65fcd6c7" name="변경" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -57,26 +33,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Gradle.C:/Users/Playdata/Documents/GitHub/be25-2nd-avg-height-174-project/team3Project/build.gradle.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "jiyeon",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Playdata/Documents/GitHub/be25-2nd-avg-height-174-project",
-    "project.structure.last.edited": "프로젝트",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "editor.preferences.tabs"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Gradle.C:/Users/Playdata/Documents/GitHub/be25-2nd-avg-height-174-project/team3Project/build.gradle.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;jiyeon&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Playdata/Documents/GitHub/be25-2nd-avg-height-174-project&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;프로젝트&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.tabs&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
       </set>
     </attachedChunks>
   </component>
@@ -87,7 +67,11 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1773901987449</updated>
+      <workItem from="1775618304907" duration="72000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
 </project>

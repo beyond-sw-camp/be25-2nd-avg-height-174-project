@@ -44,6 +44,7 @@ public class SmtpEmailService implements EmailService {
 
     @Override
     public void sendTemporaryPassword(String to, String tempPassword) {
+        log.debug("SMTP 메일 발송 시작: to={}, from={}", to, fromEmail);
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -58,8 +59,12 @@ public class SmtpEmailService implements EmailService {
             mailSender.send(message);
             log.info("임시 비밀번호 메일 발송 성공: to={}", to);
         } catch (MessagingException e) {
-            log.error("임시 비밀번호 메일 발송 실패: to={}, error={}", to, e.getMessage());
-            throw new RuntimeException("메일 발송에 실패했습니다.", e);
+            log.error("임시 비밀번호 메일 발송 실패: to={}, error={}, cause={}",
+                    to, e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "null", e);
+            throw new RuntimeException("SMTP 메일 발송 실패: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("임시 비밀번호 메일 발송 중 예상치 못한 오류: to={}, error={}", to, e.getMessage(), e);
+            throw new RuntimeException("메일 발송 중 오류 발생: " + e.getMessage(), e);
         }
     }
 

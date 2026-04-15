@@ -26,7 +26,7 @@
 </head>
 <body>
     <div class="back-button-wrap">
-        <button type="button" class="back-button" onclick="location.href='/'">
+        <button type="button" class="back-button" onclick="location.href='http://100.119.201.17:9000/'">
             ← 이전 화면
         </button>
     </div>
@@ -36,11 +36,11 @@
     <div class="info-card">
         <div class="info-row">
             <span class="label">로그인 ID</span>
-            <span class="value" th:text="${user.loginId}">loginId</span>
+            <span class="value" th:text="${user.username}">username</span>
         </div>
         <div class="info-row">
             <span class="label">사용자명</span>
-            <span class="value" th:text="${user.username}">username</span>
+            <span class="value" th:text="${user.name}">name</span>
         </div>
         <div class="info-row">
             <span class="label">닉네임</span>
@@ -49,6 +49,10 @@
         <div class="info-row">
             <span class="label">이메일</span>
             <span class="value" th:text="${user.email}">email</span>
+        </div>
+        <div class="info-row">
+            <span class="label">전화번호</span>
+            <span class="value" th:text="${user.phoneNumber}">phoneNumber</span>
         </div>
     </div>
     
