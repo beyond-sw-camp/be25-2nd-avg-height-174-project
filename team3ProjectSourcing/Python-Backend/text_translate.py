@@ -18,9 +18,11 @@ router = APIRouter()
 
 GEMINI_API_KEY = os.getenv("NANOBANANA_API_KEY")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+# 2.5-flash가 503/429 재시도 후에도 실패하면 1.5-flash로 폴백
+GEMINI_FALLBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-# Gemini 503(과부하)·429(할당량) 시 잠시 대기 후 재시도
-_MAX_RETRIES = 4
+# 모델당 최대 재시도 횟수 (2.5-flash 2회 → 실패 시 1.5-flash 2회)
+_MAX_RETRIES_PER_MODEL = 2
 _INITIAL_BACKOFF_SEC = 1.5
 _REQUEST_TIMEOUT_SEC = 120
 
@@ -49,22 +51,47 @@ def _gemini_error_message(response: requests.Response) -> str:
 
 
 def _post_gemini_with_retry(url: str, payload: dict) -> requests.Response:
+    """단일 모델 URL에 대해 재시도. 503/429면 지수 백오프 후 재시도."""
     last: Optional[requests.Response] = None
-    for attempt in range(_MAX_RETRIES):
+    for attempt in range(_MAX_RETRIES_PER_MODEL):
         last = requests.post(url, json=payload, timeout=_REQUEST_TIMEOUT_SEC)
         if last.ok:
             return last
         if last.status_code in (429, 503):
-            wait = _INITIAL_BACKOFF_SEC * (2**attempt)
+            wait = _INITIAL_BACKOFF_SEC * (2 ** attempt)
             print(
                 f"Gemini 응답 {last.status_code}, {_gemini_error_message(last)[:120]}… "
-                f"→ {wait:.1f}s 후 재시도 ({attempt + 1}/{_MAX_RETRIES})"
+                f"→ {wait:.1f}s 후 재시도 ({attempt + 1}/{_MAX_RETRIES_PER_MODEL})"
             )
             time.sleep(wait)
             continue
         break
     assert last is not None
     return last
+
+
+def _post_gemini_with_fallback(payload: dict) -> tuple[requests.Response, str]:
+    """2.5-flash 우선 시도 → 503/429 지속 시 1.5-flash로 폴백.
+    반환값: (response, 실제로 사용된 모델명)
+    """
+    primary_url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+    fallback_url = f"{GEMINI_FALLBACK_URL}?key={GEMINI_API_KEY}"
+
+    response = _post_gemini_with_retry(primary_url, payload)
+    if response.ok:
+        return response, "gemini-2.5-flash"
+
+    # 2.5-flash가 503/429로 모두 실패한 경우에만 폴백
+    if response.status_code in (429, 503):
+        print(
+            f"gemini-2.5-flash 재시도 모두 실패({response.status_code}), "
+            f"gemini-1.5-flash로 폴백합니다."
+        )
+        response = _post_gemini_with_retry(fallback_url, payload)
+        return response, "gemini-1.5-flash"
+
+    # 그 외 에러(400, 401 등)는 폴백 없이 그대로 반환
+    return response, "gemini-2.5-flash"
 
 
 @router.post("/translate_text")
@@ -81,18 +108,19 @@ def translate_text(req: TranslateTextRequest):
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.1},
     }
-    url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
 
     try:
-        response = _post_gemini_with_retry(url, payload)
+        response, used_model = _post_gemini_with_fallback(payload)
+        if used_model != "gemini-2.5-flash":
+            print(f"[폴백] {used_model} 으로 번역 처리됨")
         if not response.ok:
             msg = _gemini_error_message(response)
-            print(f"Gemini API 에러(재시도 후에도 실패): {response.status_code} {msg}")
+            print(f"Gemini API 에러(재시도·폴백 후에도 실패): {response.status_code} {msg}")
             # 구글 쪽 일시 과부하·한도 → 클라이언트도 재시도 가능하도록 503
             if response.status_code in (429, 503):
                 raise HTTPException(
                     status_code=503,
-                    detail="Gemini 일시 과부하 또는 할도 한도입니다. 잠시 후 다시 시도하세요. "
+                    detail="Gemini 일시 과부하 또는 할당 한도입니다. 잠시 후 다시 시도하세요. "
                     + msg,
                 )
             raise HTTPException(

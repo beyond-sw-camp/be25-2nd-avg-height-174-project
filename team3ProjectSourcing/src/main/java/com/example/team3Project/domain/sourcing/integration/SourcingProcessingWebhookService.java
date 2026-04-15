@@ -48,7 +48,7 @@ public class SourcingProcessingWebhookService {
     @Value("${sourcing.processing.webhook-url:}")
     private String webhookUrl;
     // 요청 바디에 넣는 marketCode의 기본값입니다(기본 "US"). 가공 API가 기대하는 마켓 코드와 맞아야 합니다.
-    @Value("${sourcing.processing.default-market-code:US}")
+    @Value("${sourcing.processing.default-market-code:COUPANG}")
     private String defaultMarketCode;
     // 웹훅 연결 타임아웃 시간(기본 15초). 가공 API 연결 실패 시 재시도.
     @Value("${sourcing.processing.webhook.connect-timeout-ms:15000}")
@@ -97,12 +97,18 @@ public class SourcingProcessingWebhookService {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("marketCode", defaultMarketCode);
         body.put("asin", d.getAsin());
-        body.put("brand", d.getBrand());
-        body.put("currency", d.getCurrency());
+
+        // 번역된 제목/브랜드가 있으면 사용, 없으면 원본 영어
+        body.put("title", normalized != null && normalized.getTranslatedTitle() != null
+                ? normalized.getTranslatedTitle() : d.getTitle());
+        body.put("brand", normalized != null && normalized.getTranslatedBrand() != null
+                ? normalized.getTranslatedBrand() : d.getBrand());
+
         body.put("price", effectivePrice(d));
-        body.put("title", d.getTitle());
+        body.put("currency", d.getCurrency());
+
         body.put("url", resolveAmazonProductUrl(d.getUrl()));
-        body.put("url_image", d.getUrlImage()); // 이미지 주소 몇몇 은 minIO, 몇몇은 원본.
+        body.put("url_image", d.getUrlImage());
 
         if (normalized != null && normalized.getDescriptionImages() != null) {
             body.put("images", normalized.getDescriptionImages());
@@ -152,8 +158,8 @@ public class SourcingProcessingWebhookService {
         m.put("asin", ent.getAsin() != null ? ent.getAsin() : dto.getAsin());
         m.put("dimensions", ent.getDimensions() != null ? ent.getDimensions() : dto.getDimensions());
         m.put("selected", ent.isSelected());
-        m.put("price", ent.getPrice() != null ? ent.getPrice() : dto.getPrice());
-        m.put("currency", ent.getCurrency() != null ? ent.getCurrency() : dto.getCurrency());
+        m.put("price", dto.getPrice() != null ? dto.getPrice() : ent.getPrice());
+        m.put("currency", dto.getCurrency() != null ? dto.getCurrency() : ent.getCurrency());
         m.put("stock", ent.getStock() != null ? ent.getStock() : dto.getStock());
         m.put("rating", ent.getRating() != null ? ent.getRating() : dto.getRating());
         m.put("reviews_count", ent.getReviewsCount() != null ? ent.getReviewsCount() : dto.getReviewsCount());

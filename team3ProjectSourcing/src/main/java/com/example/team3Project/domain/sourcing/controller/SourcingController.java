@@ -15,7 +15,6 @@ import com.example.team3Project.domain.sourcing.DTO.SourcingDTO;
 import com.example.team3Project.domain.sourcing.entity.SourcingRegistrationStatus;
 import com.example.team3Project.domain.sourcing.integration.SourcingProcessingWebhookService;
 import com.example.team3Project.domain.sourcing.service.SourcingPersistOutcome;
-import com.example.team3Project.domain.sourcing.service.SourcingProductQueryService;
 import com.example.team3Project.domain.sourcing.service.SourcingService;
 import com.example.team3Project.support.auth.RequestUserIdResolver;
 
@@ -30,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 public class SourcingController {
 
     private final SourcingService sourcingService;
-    private final SourcingProductQueryService sourcingProductQueryService;
     private final SourcingProcessingWebhookService sourcingProcessingWebhookService;
     private final RequestUserIdResolver requestUserIdResolver;
 

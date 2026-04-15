@@ -67,7 +67,10 @@ async def search_asin(session: aiohttp.ClientSession, query: str) -> tuple[dict,
         async with session.post(API_URL, json=payload) as resp:
             data = await resp.json()
 
-    content = data['results'][0].get('content', {})
+    results = data.get('results')
+    if not results:
+        raise ValueError(f"Oxylabs 응답에 results 없음 (레이트리밋 또는 오류): {data}")
+    content = results[0].get('content', {})
     organic = content.get('results', {}).get('organic', [])
     if not organic:
         raise ValueError(f"검색 결과 없음: {query}")
@@ -89,7 +92,10 @@ async def get_product_detail(session: aiohttp.ClientSession, asin: str) -> dict:
         }
         async with session.post(API_URL, json=payload) as resp:
             data = await resp.json()
-    return data['results'][0].get('content', {})
+    results = data.get('results')
+    if not results:
+        raise ValueError(f"Oxylabs 응답에 results 없음 (레이트리밋 또는 오류): {data}")
+    return results[0].get('content', {})
 
 
 async def get_variation_detail(session: aiohttp.ClientSession, var: dict) -> dict:
@@ -105,7 +111,12 @@ async def get_variation_detail(session: aiohttp.ClientSession, var: dict) -> dic
         async with session.post(API_URL, json=payload) as resp:
             data = await resp.json()
 
-    var_content = data['results'][0].get('content', {})
+    results = data.get('results')
+    if not results:
+        print(f"    variation [{var_asin}] Oxylabs 응답에 results 없음 (레이트리밋 또는 잘못된 ASIN): {data}")
+        var_content = {}
+    else:
+        var_content = results[0].get('content', {})
     print(f"    variation [{var_asin}] 조회 완료")
     return {
         'asin': var_asin,
