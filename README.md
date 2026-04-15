@@ -150,6 +150,72 @@
 ---
 
 ## 6. 🏗 시스템 아키텍처
+<details>
+  <summary>세부사항</summary>
+ <a> 아키텍트 다이어그램 </a> 
+  <img width="3785" height="2597" alt="image" src="https://github.com/user-attachments/assets/7d245472-9999-4b80-bb97-5428cf7dc964" />
+
+
+  <a> 로직 다이어그램 </a>
+  
+  ``` mermaid
+graph TD
+    %% 스타일 정의
+    classDef user fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef gateway fill:#fff4dd,stroke:#d4a017,stroke-width:2px;
+    classDef process fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef db fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+
+    User((사용자))
+
+    subgraph Entry_Layer [Access & Control]
+        AGW[API Gateway / JWT Auth]
+        Config[정책 및 마진 설정]
+    end
+
+    subgraph Core_Pipeline [Traders Main Engine]
+        direction TB
+        Sourcing[Oxylabs 아이템 소싱]
+        
+        subgraph Async_Processing [비동기/세마포어 가공]
+            ImageProc[NanoBanana 이미지 번역]
+            TextProc[Gemini 3-Flash 텍스트 번역]
+        end
+        
+        Refinement[마진 측정 및 최종 데이터 정리]
+    end
+
+    subgraph Integration_Layer [Market & Storage]
+        Coupang[쿠팡 판매자 사이트 등록]
+        DB[(Central DataBase)]
+    end
+
+    %% 흐름 연결
+    User -->|Access with JWT| AGW
+    AGW -->|배송/결제 설정 관리| Config
+    
+    Config -->|필터링 조건 전달| Sourcing
+    
+    Sourcing -->|Async Trigger| ImageProc
+    Sourcing -->|Async Trigger| TextProc
+    
+    ImageProc --> Refinement
+    TextProc --> Refinement
+    
+    Refinement -->|Data Persistence| DB
+    Refinement -->|Push to Market| Coupang
+    
+    Coupang -->|등록 상태 피드백| DB
+
+    %% 클래스 적용
+    class User user;
+    class AGW,Config gateway;
+    class Sourcing,ImageProc,TextProc,Refinement process;
+    class DB db;
+
+  ```
+</details>
+
 
 ---
 
