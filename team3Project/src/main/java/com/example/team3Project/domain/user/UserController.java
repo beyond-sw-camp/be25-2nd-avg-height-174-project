@@ -1,5 +1,6 @@
 package com.example.team3Project.domain.user;
 
+import com.example.team3Project.domain.user.dto.FindPasswordRequest;
 import com.example.team3Project.domain.user.dto.LoginRequest;
 import com.example.team3Project.domain.user.dto.PasswordChangeRequest;
 import com.example.team3Project.domain.user.dto.SignupRequest;
@@ -9,6 +10,8 @@ import com.example.team3Project.global.annotation.LoginUser;
 import com.example.team3Project.global.util.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseCookie;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -298,21 +302,29 @@ public class UserController {
     }
 
     @PostMapping("/reset-pw")
-    public String resetPassword(@RequestParam("loginId") String loginId,
-                                @RequestParam("email") String email,
-                                Model model) {
+    @ResponseBody
+    public ResponseEntity<?> resetPassword(@RequestBody FindPasswordRequest request) {
         try {
-            userService.resetPassword(loginId, email);
-            model.addAttribute("successMessage", "입력하신 이메일로 임시 비밀번호가 전송되었습니다.");
+            userService.resetPassword(request.getLoginId(), request.getEmail());
+            return ResponseEntity.ok()
+                    .body(new ApiResponse(true, "입력하신 이메일로 임시 비밀번호가 전송되었습니다."));
         } catch (IllegalArgumentException e) {
-            model.addAttribute("errorMessage", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, e.getMessage()));
         } catch (IllegalStateException e) {
-            // 이메일 발송 실패
-            model.addAttribute("errorMessage", e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body(new ApiResponse(false, e.getMessage()));
         } catch (RuntimeException e) {
-            // 기타 서버 오류
-            model.addAttribute("errorMessage", "비밀번호 재설정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            return ResponseEntity.internalServerError()
+                    .body(new ApiResponse(false, "비밀번호 재설정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
         }
-        return "users/reset-pw";
+    }
+
+    // 간단한 응답 DTO
+    @Data
+    @AllArgsConstructor
+    public static class ApiResponse {
+        private boolean success;
+        private String message;
     }
 }

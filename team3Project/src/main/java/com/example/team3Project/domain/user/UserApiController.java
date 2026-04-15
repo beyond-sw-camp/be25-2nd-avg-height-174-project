@@ -1,12 +1,16 @@
 package com.example.team3Project.domain.user;
 
+import com.example.team3Project.domain.user.dto.PasswordChangeRequest;
 import com.example.team3Project.domain.user.dto.UserResponse;
+import com.example.team3Project.domain.user.dto.UserUpdateFormRequest;
 import com.example.team3Project.global.annotation.LoginUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +38,69 @@ public class UserApiController {
 
         log.info("내 정보 조회 성공: userId={}, username={}", user.getId(), user.getUsername());
         return ResponseEntity.ok(UserResponse.from(user));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(@LoginUser User user,
+                                      @Valid @RequestBody UserUpdateFormRequest request) {
+        if (user == null) {
+            log.warn("인증되지 않은 사용자의 정보 수정 시도");
+            return ResponseEntity.status(401).body(Map.of(
+                    "error", "로그인이 필요합니다.",
+                    "code", "UNAUTHORIZED"
+            ));
+        }
+
+        try {
+            User updatedUser = userService.updateUserInfo(user.getId(), request);
+            log.info("사용자 정보 수정 성공: userId={}", user.getId());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "정보가 성공적으로 수정되었습니다.",
+                    "user", UserResponse.from(updatedUser)
+            ));
+        } catch (IllegalArgumentException e) {
+            log.warn("사용자 정보 수정 실패: userId={}, reason={}", user.getId(), e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PutMapping("/me/change-password")
+    public ResponseEntity<?> changePassword(@LoginUser User user,
+                                            @Valid @RequestBody PasswordChangeRequest request) {
+        if (user == null) {
+            log.warn("인증되지 않은 사용자의 비밀번호 변경 시도");
+            return ResponseEntity.status(401).body(Map.of(
+                    "error", "로그인이 필요합니다.",
+                    "code", "UNAUTHORIZED"
+            ));
+        }
+
+        // 새 비밀번호 일치 확인
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "새 비밀번호와 확인 비밀번호가 일치하지 않습니다."
+            ));
+        }
+
+        try {
+            userService.changePassword(user.getId(), request.getCurrentPassword(), request.getNewPassword());
+            log.info("비밀번호 변경 성공: userId={}", user.getId());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "비밀번호가 성공적으로 변경되었습니다."
+            ));
+        } catch (IllegalArgumentException e) {
+            log.warn("비밀번호 변경 실패: userId={}, reason={}", user.getId(), e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
     @PostMapping("/find-id")
