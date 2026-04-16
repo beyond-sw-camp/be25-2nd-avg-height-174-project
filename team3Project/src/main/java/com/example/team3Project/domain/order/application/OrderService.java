@@ -32,11 +32,6 @@ public class OrderService {
             throw new RuntimeException("주문 상품이 없습니다.");
         }
 
-        if (request.getCardId() == null) {
-            throw new RuntimeException("cardId가 필요합니다.");
-        }
-
-
         Order order = new Order();
 
         order.setUserId(request.getUserId());
@@ -70,8 +65,10 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // 주문 생성 후 결제 처리
-        paymentService.processPayment(savedOrder.getId(), request.getCardId());
+        // 카드 ID가 있을 때만 결제 처리
+        if (request.getCardId() != null) {
+            paymentService.processPayment(savedOrder.getId(), request.getCardId());
+        }
 
 
         return savedOrder;
