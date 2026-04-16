@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-// 상품 페이지 데이터 조회 및 이미지 URL 처리 서비스
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,16 +36,14 @@ public class ProductPageService {
     @Value("${minio.bucket}")
     private String minioBucket;
 
-    // 특정 상품의 페이지 데이터(이미지, 옵션, 전체 상품 목록) 조합
     @Transactional(readOnly = true)
     public ProductPageDto getProductPage(Long productId) {
         DummyCoupangProduct product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + productId));
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
 
         List<DummyCoupangProductImage> images = product.getImages();
         List<DummyCoupangProductOption> options = product.getOptions();
 
-        // 이미지 타입별로 분류
         List<String> mainImageUrls = images.stream()
                 .filter(img -> img.getImageType() == ImageType.MAIN)
                 .map(this::resolveImageUrl)
@@ -59,16 +56,14 @@ public class ProductPageService {
                 .filter(url -> url != null && !url.isBlank())
                 .collect(Collectors.toList());
 
-        // OPTION 이미지를 optionAsin 기준으로 매핑
         Map<String, String> optionImageMap = images.stream()
                 .filter(img -> img.getImageType() == ImageType.OPTION && img.getOptionAsin() != null)
                 .collect(Collectors.toMap(
                         DummyCoupangProductImage::getOptionAsin,
                         this::resolveImageUrl,
-                        (a, b) -> a
+                        (first, second) -> first
                 ));
 
-        // MAIN 이미지가 없으면 product.mainImageUrl 사용
         if (mainImageUrls.isEmpty() && product.getMainImageUrl() != null) {
             mainImageUrls.add(product.getMainImageUrl());
         }
@@ -86,7 +81,6 @@ public class ProductPageService {
                         .build())
                 .collect(Collectors.toList());
 
-        // 좌측 사이드바용 전체 상품 요약 목록
         List<ProductSummaryDto> allProducts = productRepository.findAll().stream()
                 .map(p -> ProductSummaryDto.builder()
                         .productId(p.getId())
@@ -110,21 +104,14 @@ public class ProductPageService {
                 .build();
     }
 
-    // DB에서 첫 번째 상품 ID 반환 (기본 리다이렉트 용도)
     @Transactional(readOnly = true)
     public Long getFirstProductId() {
         return productRepository.findAll().stream()
                 .findFirst()
                 .map(DummyCoupangProduct::getId)
-                .orElseThrow(() -> new RuntimeException("등록된 상품이 없습니다."));
+                .orElseThrow(() -> new IllegalStateException("No products are registered."));
     }
 
-    /**
-     * 이미지 URL 해석
-     * - object_key가 http로 시작하지 않으면 MinIO presigned URL 생성
-     * - presigned URL 생성 실패 시 직접 MinIO URL로 fallback
-     * - http URL이면 그대로 반환
-     */
     private String resolveImageUrl(DummyCoupangProductImage image) {
         String objectKey = image.getObjectKey();
         String imageUrl = image.getImageUrl();
@@ -140,7 +127,7 @@ public class ProductPageService {
                                 .build()
                 );
             } catch (Exception e) {
-                log.warn("MinIO presigned URL 생성 실패 (직접 URL 사용): {}", objectKey, e);
+                log.warn("Failed to create MinIO presigned URL. Falling back to direct URL: {}", objectKey, e);
                 return minioUrl + "/" + minioBucket + "/" + objectKey;
             }
         }
@@ -148,12 +135,11 @@ public class ProductPageService {
         return imageUrl;
     }
 
-    /**
-     * JSON 형태의 옵션 dimensions를 사람이 읽기 좋은 문자열로 변환
-     * 예: {"Flavor Name":"Coca-Cola","Size":"12 fl oz"} → Flavor Name: Coca-Cola / Size: 12 fl oz
-     */
     private String parseOptionDimensions(String dimensions) {
-        if (dimensions == null || dimensions.isBlank()) return "";
+        if (dimensions == null || dimensions.isBlank()) {
+            return "";
+        }
+
         try {
             String cleaned = dimensions.replaceAll("[{}\"]", "");
             return cleaned.replace(",", " / ");
