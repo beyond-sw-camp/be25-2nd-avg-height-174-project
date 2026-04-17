@@ -11,9 +11,12 @@ public class OrderManagementResponse {
 
     private String customerName;
     private String customerPhone;
+    private String customerAddress;
+    private String customsNumber;
 
+    private Long dummyCoupangProductId;
     private String productName;
-    private int price;
+    private int quantity;
 
     private String overseasMall;
 

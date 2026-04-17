@@ -4,6 +4,7 @@ package com.example.team3Project.domain.order.api;
 import com.example.team3Project.domain.order.application.OrderService;
 import com.example.team3Project.domain.order.dao.Order;
 import com.example.team3Project.domain.order.dao.OrderRepository;
+import com.example.team3Project.domain.order.dto.MonthlyRevenueResponse;
 import com.example.team3Project.domain.order.dto.OrderManagementResponse;
 import com.example.team3Project.domain.order.dto.OrderRequest;
 import lombok.RequiredArgsConstructor;
@@ -73,5 +74,12 @@ public class OrderController {
     public List<Order> getOrdersByUser(@PathVariable Long userId) {
 
         return orderService.getOrdersByUser(userId);
+    }
+
+    // 사용자 등록 상품의 월별 수익 집계
+    @GetMapping("/revenue/monthly/{userId}")
+    public List<MonthlyRevenueResponse> getMonthlyRevenue(@PathVariable Long userId) {
+
+        return orderService.getMonthlyRevenue(userId);
     }
 }

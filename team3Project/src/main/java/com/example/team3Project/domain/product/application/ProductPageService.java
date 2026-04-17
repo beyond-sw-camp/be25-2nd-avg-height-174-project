@@ -5,6 +5,8 @@ import com.example.team3Project.domain.product.dao.DummyCoupangProductImage;
 import com.example.team3Project.domain.product.dao.DummyCoupangProductImage.ImageType;
 import com.example.team3Project.domain.product.dao.DummyCoupangProductOption;
 import com.example.team3Project.domain.product.dao.DummyCoupangProductRepository;
+import com.example.team3Project.domain.product.dao.Sourcing;
+import com.example.team3Project.domain.product.dao.SourcingRepository;
 import com.example.team3Project.domain.product.dto.ProductPageDto;
 import com.example.team3Project.domain.product.dto.ProductPageDto.OptionDto;
 import com.example.team3Project.domain.product.dto.ProductPageDto.ProductSummaryDto;
@@ -28,13 +30,11 @@ import java.util.stream.Collectors;
 public class ProductPageService {
 
     private final DummyCoupangProductRepository productRepository;
+    private final SourcingRepository sourcingRepository;
     private final MinioClient minioClient;
 
     @Value("${minio.url}")
     private String minioUrl;
-
-    @Value("${minio.bucket}")
-    private String minioBucket;
 
     @Transactional(readOnly = true)
     public ProductPageDto getProductPage(Long productId) {
@@ -55,6 +55,16 @@ public class ProductPageService {
                 .map(this::resolveImageUrl)
                 .filter(url -> url != null && !url.isBlank())
                 .collect(Collectors.toList());
+
+        // DESCRIPTION 이미지가 없으면 sourcing_description_images 에서 폴백
+        if (descriptionImageUrls.isEmpty() && product.getSourceProductId() != null) {
+            descriptionImageUrls = sourcingRepository.findByProductId(product.getSourceProductId())
+                    .stream()
+                    .flatMap(s -> s.getDescriptionImages().stream())
+                    .filter(url -> url != null && !url.isBlank())
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
 
         Map<String, String> optionImageMap = images.stream()
                 .filter(img -> img.getImageType() == ImageType.OPTION && img.getOptionAsin() != null)
@@ -113,22 +123,27 @@ public class ProductPageService {
     }
 
     private String resolveImageUrl(DummyCoupangProductImage image) {
-        String objectKey = image.getObjectKey();
-        String imageUrl = image.getImageUrl();
+        String objectKey  = image.getObjectKey();
+        String bucketName = image.getBucketName();
+        String imageUrl   = image.getImageUrl();
 
+        // objectKey가 있고 http URL이 아니면 MinIO presigned URL로 시도
         if (objectKey != null && !objectKey.isBlank() && !objectKey.startsWith("http")) {
+            String bucket = (bucketName != null && !bucketName.isBlank()) ? bucketName : "sourcing-images";
             try {
                 return minioClient.getPresignedObjectUrl(
                         GetPresignedObjectUrlArgs.builder()
                                 .method(Method.GET)
-                                .bucket(minioBucket)
+                                .bucket(bucket)
                                 .object(objectKey)
                                 .expiry(1, TimeUnit.DAYS)
                                 .build()
                 );
             } catch (Exception e) {
-                log.warn("Failed to create MinIO presigned URL. Falling back to direct URL: {}", objectKey, e);
-                return minioUrl + "/" + minioBucket + "/" + objectKey;
+                log.warn("MinIO presigned URL 실패 (bucket={}, key={}). direct URL 폴백", bucket, objectKey, e);
+                // MinIO 실패 시 imageUrl이 있으면 사용, 없으면 직접 경로
+                return (imageUrl != null && !imageUrl.isBlank()) ? imageUrl
+                        : (minioUrl + "/" + bucket + "/" + objectKey);
             }
         }
 

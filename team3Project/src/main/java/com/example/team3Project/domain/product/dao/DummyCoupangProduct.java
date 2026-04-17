@@ -56,6 +56,10 @@ public class DummyCoupangProduct {
     @Column(name = "margin_krw")
     private BigDecimal marginKrw;
 
+    // 실제 주문 건수 (주문 서비스에서 증가 처리)
+    @Column(name = "order_count", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int orderCount = 0;
+
     // 상품 이미지 목록 (sort_order 오름차순)
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     @OrderBy("sortOrder ASC")
@@ -64,4 +68,8 @@ public class DummyCoupangProduct {
     // 상품 옵션 목록
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<DummyCoupangProductOption> options = new ArrayList<>();
+
+    public void incrementOrderCount(int quantity) {
+        this.orderCount += quantity;
+    }
 }
