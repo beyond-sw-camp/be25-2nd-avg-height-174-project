@@ -18,10 +18,10 @@ router = APIRouter()
 
 GEMINI_API_KEY = os.getenv("NANOBANANA_API_KEY")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-# 2.5-flash가 503/429 재시도 후에도 실패하면 1.5-flash로 폴백
-GEMINI_FALLBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+# 2.5-flash가 503/429 재시도 후에도 실패하면 2.0-flash로 폴백
+GEMINI_FALLBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
-# 모델당 최대 재시도 횟수 (2.5-flash 2회 → 실패 시 1.5-flash 2회)
+# 모델당 최대 재시도 횟수 (2.5-flash 2회 → 실패 시 2.0-flash 2회)
 _MAX_RETRIES_PER_MODEL = 2
 _INITIAL_BACKOFF_SEC = 1.5
 _REQUEST_TIMEOUT_SEC = 120
@@ -85,10 +85,10 @@ def _post_gemini_with_fallback(payload: dict) -> tuple[requests.Response, str]:
     if response.status_code in (429, 503):
         print(
             f"gemini-2.5-flash 재시도 모두 실패({response.status_code}), "
-            f"gemini-1.5-flash로 폴백합니다."
+            f"gemini-2.0-flash로 폴백합니다."
         )
         response = _post_gemini_with_retry(fallback_url, payload)
-        return response, "gemini-1.5-flash"
+        return response, "gemini-2.0-flash"
 
     # 그 외 에러(400, 401 등)는 폴백 없이 그대로 반환
     return response, "gemini-2.5-flash"

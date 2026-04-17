@@ -72,6 +72,10 @@ public class SourcingPageController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
+        Object bannedWords = body.get("banned_words");
+        log.info("소싱 요청 수신 userId={} bannedWordsCount={}",
+                userId, (bannedWords instanceof List<?> l) ? l.size() : 0);
+
         // 1. Python 스크래핑 서버 호출
         ResponseEntity<Object> pythonResponse;
         try {
