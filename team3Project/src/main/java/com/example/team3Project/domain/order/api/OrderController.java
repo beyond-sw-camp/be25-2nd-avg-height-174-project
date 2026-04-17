@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -77,9 +78,32 @@ public class OrderController {
     }
 
     // 사용자 등록 상품의 월별 수익 집계
-    @GetMapping("/revenue/monthly/{userId}")
-    public List<MonthlyRevenueResponse> getMonthlyRevenue(@PathVariable Long userId) {
+    @GetMapping("/revenue/monthly")
+    public ResponseEntity<List<MonthlyRevenueResponse>> getMonthlyRevenue(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader
+    ) {
+        Long userId = parseUserIdHeader(userIdHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
 
-        return orderService.getMonthlyRevenue(userId);
+        return ResponseEntity.ok(orderService.getMonthlyRevenue(userId));
+    }
+
+    private Long parseUserIdHeader(String userIdHeader) {
+        if (userIdHeader == null || userIdHeader.isBlank()) {
+            return null;
+        }
+
+        String firstValue = userIdHeader.split(",")[0].trim();
+        if (firstValue.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Long.valueOf(firstValue);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
