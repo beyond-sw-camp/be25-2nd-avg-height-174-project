@@ -217,7 +217,7 @@ graph TD
 <details>
    <summary>세부사항</summary>
 <div markdown="1">
-  <a href="https://docs.google.com/spreadsheets/d/1dIV9X2avDBPIIPxYHD-rsDEI2gGXk_7wAITY9AfHpv4/edit?gid=2024832708#gid=2024832708">API 명세서</a>
+  <a href="https://www.notion.so/API-343f85367d62809fbef7c5884b7ebce8?source=copy_link">API 명세서</a>
 </div>
 </details>
 <br>
@@ -237,7 +237,7 @@ graph TD
 
 | 조원이름 | 회고 |
 |----------|------|
-| 민정기 |  |
+| 민정기 | (작성중) |
 | 이진 |  |
 | 김지연 |  |
 | 이용호 |  |
