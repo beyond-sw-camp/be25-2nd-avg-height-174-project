@@ -1,6 +1,6 @@
 # be25-2nd-avg(height)=174-project
 
-# 업무 자동화 시스템
+# 구매대행 업무 자동화 시스템
 <img width="1435" height="690" alt="스크린샷 2026-04-16 시간: 16 07 39" src="https://github.com/user-attachments/assets/55df618a-f32d-4422-a822-97d0d49c901c" />
 
 ## 👥 팀원 소개
